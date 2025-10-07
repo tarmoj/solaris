@@ -15,5 +15,4 @@ HEADERS += \
 
 EXAMPLE_FILES += sslechoclient.html
 
-RESOURCES += securesocketclient.qrc
 

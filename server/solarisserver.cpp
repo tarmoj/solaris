@@ -122,7 +122,7 @@ void SolarisServer::processTextMessage(QString message)
     qDebug()  << "Message received: " << message;
     
     // Check if the message is in the format "generate | text | filename | channel | time"
-    if (message.startsWith("generate|") || message.startsWith("generate |")) {
+    if (message.startsWith("generate") ) {
         QStringList parts = message.split("|");
         
         // Trim whitespace from each part
@@ -130,7 +130,7 @@ void SolarisServer::processTextMessage(QString message)
             parts[i] = parts[i].trimmed();
         }
         
-        if (parts.size() == 5 && parts[0] == "generate") {
+        if (parts.size() >= 5 && parts[0] == "generate") {
             QString text = parts[1];
             QString filename = parts[2];
             QString channel = parts[3];
@@ -140,11 +140,11 @@ void SolarisServer::processTextMessage(QString message)
                      << "channel:" << channel << "time:" << time;
             
             // Get the audio directory path (assuming it's ../audio relative to the executable)
-            QString audioDir = QDir::currentPath() + "/../audio";
+            QString audioDir = QDir::currentPath() + "/../../../audio";
             QDir dir(audioDir);
             if (!dir.exists()) {
                 // Try alternative path
-                audioDir = QDir::currentPath() + "/audio";
+                audioDir = QDir::currentPath() + "/../../audio";
                 dir.setPath(audioDir);
                 if (!dir.exists()) {
                     qWarning() << "Audio directory not found:" << audioDir;
@@ -207,12 +207,13 @@ void SolarisServer::processTextMessage(QString message)
         } else {
             qWarning() << "Invalid generate message format. Expected 5 parts, got:" << parts.size();
         }
-    }
-    
-    // Echo message to all clients (keep existing behavior)
-    for (QWebSocket * client : m_clients) {
-        if (client) {
-            client->sendTextMessage(message);
+    } else {
+
+        // Echo message to all clients (keep existing behavior)
+        for (QWebSocket * client : m_clients) {
+            if (client) {
+                client->sendTextMessage(message);
+            }
         }
     }
 
