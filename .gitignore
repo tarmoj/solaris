@@ -1,4 +1,6 @@
 audio/*.sh
+audio/events.txt
+audio/*/
 
 # Prerequisites
 *.d
