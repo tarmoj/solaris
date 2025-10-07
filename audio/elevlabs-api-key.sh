@@ -1,3 +1,0 @@
-#!/bin/bash
-export ELEVENLABS_API_KEY="sk_d935c9b27fb945400919ce5c910ba6ac67e36e105b5fb713"
-
