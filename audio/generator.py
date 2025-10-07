@@ -5,14 +5,15 @@ import sys
 import argparse
 
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")  # store key in env var
-print(f"Using ElevenLabs API Key: { ELEVENLABS_API_KEY}")  # print first 4 chars for verification
-if not ELEVENLABS_API_KEY:
-    raise RuntimeError("Set ELEVENLABS_API_KEY environment variable")
 
 VOICE_ID = "cgSgspJ2msm6clMCkdW9"  # Jessica's voice ID
 
 def generate_audio(text: str, output_path: str):
     """Generate speech from text and save as MP3 file."""
+    print(f"Using ElevenLabs API Key: {ELEVENLABS_API_KEY}")  # print first 4 chars for verification
+    if not ELEVENLABS_API_KEY:
+        raise RuntimeError("Set ELEVENLABS_API_KEY environment variable")
+    
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
 
     headers = {
