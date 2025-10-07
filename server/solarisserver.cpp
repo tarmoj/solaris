@@ -8,6 +8,7 @@
 #include <QtCore/QProcess>
 #include <QtCore/QDir>
 #include <QtCore/QTextStream>
+#include <QtCore/QStringList>
 #include <QtNetwork/QSslCertificate>
 #include <QtNetwork/QSslKey>
 
@@ -160,19 +161,28 @@ void SolarisServer::processTextMessage(QString message)
             QString apiKeyScript = audioDir + "/elevenlabs-api-key.sh";
             
             // Create the command to source the API key and run the generator
-            // We'll use bash to source the script and run python
-            QString command = QString("bash -c 'source %1 && python3 %2 \"%3\" \"%4\" \"%5\"'")
+            // We need to properly escape arguments for bash
+            // Single quotes prevent any interpretation by bash, but we need to escape single quotes in the text
+            auto bashEscape = [](const QString &str) -> QString {
+                QString escaped = str;
+                escaped.replace("'", "'\\''");  // Replace ' with '\''
+                return "'" + escaped + "'";
+            };
+            
+            QString bashCommand = QString("source %1 && python3 %2 %3 %4 %5")
                 .arg(apiKeyScript)
                 .arg(generatorScript)
-                .arg(text)
-                .arg(channel)
-                .arg(filename);
+                .arg(bashEscape(text))
+                .arg(bashEscape(channel))
+                .arg(bashEscape(filename));
             
-            qDebug() << "Executing command:" << command;
+            qDebug() << "Executing bash command:" << bashCommand;
             
             // Execute the command
             QProcess process;
-            process.start(command);
+            QStringList arguments;
+            arguments << "-c" << bashCommand;
+            process.start("bash", arguments);
             
             // Wait for the process to finish (with timeout)
             if (process.waitForFinished(30000)) { // 30 second timeout
