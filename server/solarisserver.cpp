@@ -1,6 +1,6 @@
 // Copyright (C) 2016 Kurt Pattyn <pattyn.kurt@gmail.com>.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-#include "sslechoserver.h"
+#include "solarisserver.h"
 #include "QtWebSockets/QWebSocketServer"
 #include "QtWebSockets/QWebSocket"
 #include <QtCore/QDebug>
@@ -11,7 +11,7 @@
 QT_USE_NAMESPACE
 
 //! [constructor]
-SslEchoServer::SslEchoServer(quint16 port, QObject *parent) :
+SolarisServer::SolarisServer(quint16 port, QObject *parent) :
     QObject(parent),
     m_pWebSocketServer(nullptr)
 {
@@ -33,20 +33,20 @@ SslEchoServer::SslEchoServer(quint16 port, QObject *parent) :
     {
         qDebug() << "SSL Echo Server listening on port" << port;
         connect(m_pWebSocketServer, &QWebSocketServer::newConnection,
-                this, &SslEchoServer::onNewConnection);
+                this, &SolarisServer::onNewConnection);
         connect(m_pWebSocketServer, &QWebSocketServer::sslErrors,
-                this, &SslEchoServer::onSslErrors);
+                this, &SolarisServer::onSslErrors);
     }
 }
 //! [constructor]
 
-SslEchoServer::~SslEchoServer()
+SolarisServer::~SolarisServer()
 {
     m_pWebSocketServer->close();
     qDeleteAll(m_clients.begin(), m_clients.end());
 }
 
-bool SslEchoServer::prepareSsl(const QString &certPath, const QString &keyPath) {
+bool SolarisServer::prepareSsl(const QString &certPath, const QString &keyPath) {
     QFile certFile(certPath);
     if (!certFile.open(QIODevice::ReadOnly)) {
         qCritical() << "Cannot open certificate file:" << certPath;
@@ -97,23 +97,23 @@ bool SslEchoServer::prepareSsl(const QString &certPath, const QString &keyPath) 
 }
 
 //! [onNewConnection]
-void SslEchoServer::onNewConnection()
+void SolarisServer::onNewConnection()
 {
     QWebSocket *pSocket = m_pWebSocketServer->nextPendingConnection();
 
     qDebug() << "Client connected:" << pSocket->peerName() << pSocket->origin();
 
-    connect(pSocket, &QWebSocket::textMessageReceived, this, &SslEchoServer::processTextMessage);
+    connect(pSocket, &QWebSocket::textMessageReceived, this, &SolarisServer::processTextMessage);
     connect(pSocket, &QWebSocket::binaryMessageReceived,
-            this, &SslEchoServer::processBinaryMessage);
-    connect(pSocket, &QWebSocket::disconnected, this, &SslEchoServer::socketDisconnected);
+            this, &SolarisServer::processBinaryMessage);
+    connect(pSocket, &QWebSocket::disconnected, this, &SolarisServer::socketDisconnected);
 
     m_clients << pSocket;
 }
 //! [onNewConnection]
 
 //! [processTextMessage]
-void SslEchoServer::processTextMessage(QString message)
+void SolarisServer::processTextMessage(QString message)
 {
     //QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     qDebug()  << "Message received: " << message;
@@ -127,7 +127,7 @@ void SslEchoServer::processTextMessage(QString message)
 //! [processTextMessage]
 
 //! [processBinaryMessage]
-void SslEchoServer::processBinaryMessage(QByteArray message)
+void SolarisServer::processBinaryMessage(QByteArray message)
 {
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     if (pClient)
@@ -138,7 +138,7 @@ void SslEchoServer::processBinaryMessage(QByteArray message)
 //! [processBinaryMessage]
 
 //! [socketDisconnected]
-void SslEchoServer::socketDisconnected()
+void SolarisServer::socketDisconnected()
 {
     qDebug() << "Client disconnected";
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
@@ -149,7 +149,7 @@ void SslEchoServer::socketDisconnected()
     }
 }
 
-void SslEchoServer::onSslErrors(const QList<QSslError> &)
+void SolarisServer::onSslErrors(const QList<QSslError> &)
 {
     qDebug() << "Ssl errors occurred";
 }
