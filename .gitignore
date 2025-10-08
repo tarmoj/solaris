@@ -1,5 +1,5 @@
 audio/*.sh
-audio/events.txt
+events.txt
 audio/*/
 
 # Prerequisites

@@ -11,6 +11,7 @@
 #include <QtCore/QStringList>
 #include <QtNetwork/QSslCertificate>
 #include <QtNetwork/QSslKey>
+#include <algorithm>
 
 QT_USE_NAMESPACE
 
@@ -196,17 +197,53 @@ void SolarisServer::processTextMessage(QString message)
                 }
                 
                 if (exitCode == 0) {
-                    // Success! Add entry to events.txt
-                    QString eventsFile = audioDir + "/events.txt";
-                    QFile file(eventsFile);
+                    // Success! Add entry to events.txt in parent directory of audio
+                    QDir audioDirObj(audioDir);
+                    audioDirObj.cdUp();  // Go to parent directory
+                    QString eventsFile = audioDirObj.absolutePath() + "/events.txt";
                     
-                    if (file.open(QIODevice::Append | QIODevice::Text)) {
-                        QTextStream out(&file);
-                        out << time << "|" << channel << "|" << filename << ".mp3|" << text << "\n";
+                    // Create the new entry
+                    QString newEntry = QString("%1|%2|%3.mp3|%4").arg(time).arg(channel).arg(filename).arg(text);
+                    
+                    // Read existing entries
+                    QStringList entries;
+                    QFile file(eventsFile);
+                    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                        QTextStream in(&file);
+                        while (!in.atEnd()) {
+                            QString line = in.readLine().trimmed();
+                            if (!line.isEmpty()) {
+                                entries.append(line);
+                            }
+                        }
                         file.close();
-                        qDebug() << "Successfully added entry to events.txt";
+                    }
+                    
+                    // Check if the exact same entry already exists
+                    if (!entries.contains(newEntry)) {
+                        // Add the new entry
+                        entries.append(newEntry);
+                        
+                        // Sort entries by time field (first field before first |)
+                        std::sort(entries.begin(), entries.end(), [](const QString &a, const QString &b) {
+                            QString timeA = a.section('|', 0, 0);
+                            QString timeB = b.section('|', 0, 0);
+                            return timeA < timeB;
+                        });
+                        
+                        // Write all sorted entries back to file
+                        if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+                            QTextStream out(&file);
+                            for (const QString &entry : entries) {
+                                out << entry << "\n";
+                            }
+                            file.close();
+                            qDebug() << "Successfully added and sorted entry in events.txt";
+                        } else {
+                            qWarning() << "Failed to open events.txt for writing:" << eventsFile;
+                        }
                     } else {
-                        qWarning() << "Failed to open events.txt for writing:" << eventsFile;
+                        qDebug() << "Entry already exists in events.txt, skipping duplicate";
                     }
                 } else {
                     qWarning() << "Generator script failed with exit code:" << exitCode;

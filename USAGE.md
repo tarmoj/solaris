@@ -22,7 +22,7 @@ The Solaris Server is a WebSocket-based server that can generate Text-to-Speech 
    - Runs `generator.py` with the provided parameters
    - Creates a subdirectory for the channel if it doesn't exist
    - Saves the MP3 file to `audio/{channel}/{filename}.mp3`
-   - On success, appends a line to `audio/events.txt`
+   - On success, reads existing entries from `events.txt` (in parent directory), checks for duplicates, adds the new entry, sorts all entries by time, and saves back to the file
 
 ## Message Format
 
@@ -48,7 +48,7 @@ generate | Hello World | greeting001 | announcements | 2024-01-01T12:00:00
 This will:
 1. Generate speech for "Hello World"
 2. Save it as `audio/announcements/greeting001.mp3`
-3. Add this line to `audio/events.txt`:
+3. Add this line to `events.txt` (in the repository root, sorted by time):
    ```
    2024-01-01T12:00:00|announcements|greeting001.mp3|Hello World
    ```
@@ -132,7 +132,7 @@ solaris/
 
 ## Events Log Format
 
-Each successful TTS generation adds a line to `audio/events.txt`:
+Each successful TTS generation adds a line to `events.txt` in the repository root directory. The file is automatically sorted by time, and duplicate entries are prevented:
 
 ```
 time|channel|filename.mp3|text
@@ -143,3 +143,5 @@ Example:
 2024-01-01T12:00:00|announcements|greeting001.mp3|Hello World
 2024-01-01T12:05:00|music|intro001.mp3|Welcome to the show
 ```
+
+**Note**: Entries are automatically sorted chronologically by the time field.

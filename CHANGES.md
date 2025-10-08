@@ -65,7 +65,14 @@ Log:    2024-01-01T12:00:00|announcements|greeting001.mp3|Hello World
 ```
 
 ### 4. Events Log Format
-Each successful generation appends a line to `audio/events.txt`:
+Each successful generation updates `events.txt` in the repository root directory:
+- Reads existing entries
+- Checks for duplicate entries (skips if already exists)
+- Adds new entry if unique
+- Sorts all entries by time field
+- Writes sorted entries back to file
+
+Format:
 ```
 time|channel|filename.mp3|text
 ```
@@ -73,7 +80,7 @@ time|channel|filename.mp3|text
 ### 5. .gitignore Updates
 Added patterns to exclude:
 - `audio/*.sh` - API key scripts
-- `audio/events.txt` - Event log
+- `events.txt` - Event log (in repository root)
 - `audio/*/` - All channel subdirectories
 
 ## Technical Implementation Details
@@ -123,7 +130,7 @@ generate | Hello from WebSocket | msg001 | greetings | 2024-01-01T12:00:00
 
 ### 4. Verify Results
 - Check file created: `audio/greetings/msg001.mp3`
-- Check log entry in: `audio/events.txt`
+- Check log entry in: `events.txt` (repository root, sorted by time)
 
 ## Security Notes
 - API key script is git-ignored

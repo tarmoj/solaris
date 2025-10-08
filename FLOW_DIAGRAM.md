@@ -66,28 +66,37 @@
 │                                                                  │
 │  1. Checks exit code == 0                                       │
 │                                                                  │
-│  2. Opens audio/events.txt (append mode)                        │
+│  2. Opens events.txt (in parent directory) for reading          │
 │                                                                  │
-│  3. Writes line:                                                │
-│     "2024-01-01|news|file1.mp3|Hello World\n"                   │
+│  3. Reads all existing entries                                  │
 │                                                                  │
-│  4. Logs success message                                        │
+│  4. Checks if entry already exists (no duplicates)              │
 │                                                                  │
-│  5. Echoes original message to all WebSocket clients            │
+│  5. Adds new entry: "2024-01-01|news|file1.mp3|Hello World"    │
+│                                                                  │
+│  6. Sorts all entries by time field                             │
+│                                                                  │
+│  7. Writes all sorted entries back to events.txt                │
+│                                                                  │
+│  8. Logs success message                                        │
+│                                                                  │
+│  9. Echoes original message to all WebSocket clients            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## File System State After Processing
 
 ```
-audio/
-├── elevenlabs-api-key.sh      # Contains: export ELEVENLABS_API_KEY="..."
-├── generator.py               # Python TTS script
-├── events.txt                 # Event log
+solaris/                           # Repository root
+├── events.txt                     # Event log (sorted by time, no duplicates)
 │   └── Contains: "2024-01-01|news|file1.mp3|Hello World"
 │
-└── news/                      # Channel directory (created automatically)
-    └── file1.mp3              # Generated audio file
+└── audio/
+    ├── elevenlabs-api-key.sh      # Contains: export ELEVENLABS_API_KEY="..."
+    ├── generator.py               # Python TTS script
+    │
+    └── news/                      # Channel directory (created automatically)
+        └── file1.mp3              # Generated audio file
 ```
 
 ## Error Handling
