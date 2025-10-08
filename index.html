@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solaris - Main Menu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #4a9eff;
+            font-size: 2.5em;
+        }
+        
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .menu-link {
+            display: block;
+            padding: 20px 30px;
+            background: #3a3a3a;
+            color: #e0e0e0;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .menu-link:hover {
+            background: #4a4a4a;
+            border-color: #4a9eff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(74, 158, 255, 0.3);
+        }
+        
+        .menu-link:active {
+            transform: translateY(0);
+        }
+        
+        .description {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Solaris</h1>
+        <nav class="menu">
+            <a href="client/editor.html" class="menu-link">Editor</a>
+            <a href="client/performer.html" class="menu-link">Performer</a>
+        </nav>
+        <p class="description">
+            Software for performance piece "Solaris" by Andrus Kallastu &amp; Co.
+        </p>
+    </div>
+</body>
+</html>
