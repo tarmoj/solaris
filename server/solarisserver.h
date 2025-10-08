@@ -1,7 +1,7 @@
 // Copyright (C) 2016 Kurt Pattyn <pattyn.kurt@gmail.com>.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-#ifndef SSLECHOSERVER_H
-#define SSLECHOSERVER_H
+#ifndef SOLARISSERVER_H
+#define SOLARISSERVER_H
 
 #include <QtCore/QObject>
 #include <QtCore/QList>
@@ -15,12 +15,12 @@
 QT_FORWARD_DECLARE_CLASS(QWebSocketServer)
 QT_FORWARD_DECLARE_CLASS(QWebSocket)
 
-class SslEchoServer : public QObject
+class SolarisServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit SslEchoServer(quint16 port, QObject *parent = nullptr);
-    ~SslEchoServer() override;
+    explicit SolarisServer(quint16 port, QObject *parent = nullptr);
+    ~SolarisServer() override;
 
 private Q_SLOTS:
     void onNewConnection();
@@ -36,4 +36,4 @@ private:
     QSslConfiguration m_sslConfig;
 };
 
-#endif //SSLECHOSERVER_H
+#endif //SOLARISSERVER_H
