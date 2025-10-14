@@ -1,12 +1,502 @@
 <!DOCTYPE html>
-<html lang="">
-  <head>
+<html lang="en">
+<head>
     <meta charset="utf-8">
-    <title></title>
-  </head>
-  <body>
-    <header></header>
-    <main></main>
-    <footer></footer>
-  </body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solaris - Performer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #4a9eff;
+            margin-bottom: 10px;
+        }
+        
+        .header a {
+            color: #4a9eff;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        
+        .header a:hover {
+            text-decoration: underline;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        
+        .control-group input {
+            padding: 10px;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 1em;
+            width: 120px;
+        }
+        
+        .control-group input:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+        
+        .volume-control {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 200px;
+        }
+        
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #3a3a3a;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4a9eff;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4a9eff;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .volume-value {
+            text-align: center;
+            color: #4a9eff;
+            font-weight: bold;
+        }
+        
+        button {
+            padding: 12px 30px;
+            background: #4a9eff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #3a8eef;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 158, 255, 0.4);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        button.hidden {
+            display: none;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        .status.connected {
+            background: #2d5016;
+            border: 1px solid #4a8c2a;
+            color: #90ee90;
+        }
+        
+        .status.disconnected {
+            background: #5a1616;
+            border: 1px solid #8a2a2a;
+            color: #ff8a8a;
+        }
+        
+        .display-area {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 40px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .display-text {
+            font-size: 2.5em;
+            color: #4a9eff;
+            word-wrap: break-word;
+            max-width: 100%;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .placeholder-text {
+            font-size: 1.5em;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* Lock overlay */
+        .lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: pointer;
+        }
+        
+        .lock-overlay.active {
+            display: flex;
+        }
+        
+        .lock-message {
+            text-align: center;
+            color: #4a9eff;
+        }
+        
+        .lock-message h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .lock-message p {
+            font-size: 1.5em;
+            color: #aaa;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .display-text {
+                font-size: 1.8em;
+            }
+            
+            .lock-message h2 {
+                font-size: 2em;
+            }
+            
+            .lock-message p {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Lock Overlay -->
+    <div class="lock-overlay" id="lockOverlay">
+        <div class="lock-message">
+            <h2>🔒 LOCKED</h2>
+            <p>Triple-click/tap to unlock</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Solaris - Performer</h1>
+            <a href="../index.html">← Back to Main Menu</a>
+        </div>
+        
+        <!-- Controls Section -->
+        <section class="section">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="channelInput">Channel (1-12):</label>
+                    <input type="number" id="channelInput" min="1" max="12" value="1">
+                </div>
+                
+                <div class="volume-control">
+                    <label for="volumeSlider">Volume:</label>
+                    <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
+                    <div class="volume-value" id="volumeValue">80%</div>
+                </div>
+                
+                <button id="connectBtn" class="hidden">Connect</button>
+                <button id="lockBtn">Lock Mode</button>
+            </div>
+            
+            <div id="statusDisplay" class="status disconnected">
+                Connecting to server...
+            </div>
+        </section>
+        
+        <!-- Display Area -->
+        <div class="display-area">
+            <div id="displayText" class="placeholder-text">
+                Waiting for messages...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // WebSocket connection
+        let ws = null;
+        let currentChannel = 1;
+        let volumeLevel = 0.8; // 0.0 to 1.0
+        let isLocked = false;
+        let clickCount = 0;
+        let clickTimer = null;
+        
+        // DOM elements
+        const channelInput = document.getElementById('channelInput');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        const connectBtn = document.getElementById('connectBtn');
+        const lockBtn = document.getElementById('lockBtn');
+        const statusDisplay = document.getElementById('statusDisplay');
+        const displayText = document.getElementById('displayText');
+        const lockOverlay = document.getElementById('lockOverlay');
+        
+        // Load saved channel from localStorage
+        function loadChannel() {
+            const savedChannel = localStorage.getItem('solaris_channel');
+            if (savedChannel) {
+                const channel = parseInt(savedChannel);
+                if (channel >= 1 && channel <= 12) {
+                    currentChannel = channel;
+                    channelInput.value = channel;
+                }
+            }
+        }
+        
+        // Save channel to localStorage
+        function saveChannel() {
+            localStorage.setItem('solaris_channel', currentChannel.toString());
+        }
+        
+        // Update status display
+        function updateStatus(message, connected) {
+            statusDisplay.textContent = message;
+            statusDisplay.className = 'status ' + (connected ? 'connected' : 'disconnected');
+        }
+        
+        // Connect to WebSocket
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket('wss://live.uuu.ee:1234');
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    updateStatus('Connected to server (Channel ' + currentChannel + ')', true);
+                    connectBtn.classList.add('hidden');
+                };
+                
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    updateStatus('Disconnected from server', false);
+                    connectBtn.classList.remove('hidden');
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateStatus('Connection error', false);
+                };
+                
+                ws.onmessage = (event) => {
+                    console.log('Received message:', event.data);
+                    handleMessage(event.data);
+                };
+            } catch (error) {
+                console.error('Failed to create WebSocket:', error);
+                updateStatus('Failed to connect: ' + error.message, false);
+                connectBtn.classList.remove('hidden');
+            }
+        }
+        
+        // Handle incoming WebSocket message
+        function handleMessage(message) {
+            // Expected format: 'play|fileName|text'
+            const parts = message.split('|');
+            
+            if (parts.length >= 3 && parts[0].trim().toLowerCase() === 'play') {
+                const fileName = parts[1].trim();
+                const text = parts.slice(2).join('|').trim(); // Rejoin in case text contains |
+                
+                // Display the text
+                displayText.textContent = text;
+                displayText.className = 'display-text';
+                
+                // Play the audio file
+                playAudio(fileName);
+            } else {
+                console.warn('Unexpected message format:', message);
+            }
+        }
+        
+        // Play audio file
+        function playAudio(fileName) {
+            // Construct path: ../audio/audiofiles/{fileName}.mp3
+            // Remove .mp3 extension if present
+            const cleanFileName = fileName.replace('.mp3', '');
+            const audioPath = `../audio/audiofiles/${cleanFileName}.mp3`;
+            
+            console.log('Playing audio:', audioPath);
+            
+            const audio = new Audio(audioPath);
+            audio.volume = volumeLevel;
+            
+            audio.play().then(() => {
+                console.log('Playing audio file:', audioPath);
+            }).catch(error => {
+                if (error.name === 'AbortError') {
+                    console.log('Playback ended normally.');
+                } else {
+                    console.error('Playback failed:', error);
+                    alert('Error playing audio file: ' + audioPath + '\n' + error.message);
+                }
+            });
+            
+            // Clear display text after audio ends
+            audio.addEventListener('ended', () => {
+                displayText.textContent = 'Waiting for messages...';
+                displayText.className = 'placeholder-text';
+            });
+        }
+        
+        // Channel input handler
+        channelInput.addEventListener('change', (e) => {
+            const value = parseInt(e.target.value);
+            if (value >= 1 && value <= 12) {
+                currentChannel = value;
+                saveChannel();
+                updateStatus('Channel changed to ' + currentChannel + (ws && ws.readyState === WebSocket.OPEN ? ' (Connected)' : ' (Disconnected)'), ws && ws.readyState === WebSocket.OPEN);
+            } else {
+                channelInput.value = currentChannel;
+            }
+        });
+        
+        // Volume slider handler
+        volumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            volumeLevel = value / 100;
+            volumeValue.textContent = value + '%';
+        });
+        
+        // Connect button handler
+        connectBtn.addEventListener('click', () => {
+            connectWebSocket();
+        });
+        
+        // Lock mode handler
+        lockBtn.addEventListener('click', () => {
+            isLocked = true;
+            lockOverlay.classList.add('active');
+        });
+        
+        // Triple-click/tap to unlock
+        lockOverlay.addEventListener('click', () => {
+            clickCount++;
+            
+            if (clickCount === 1) {
+                clickTimer = setTimeout(() => {
+                    clickCount = 0;
+                }, 800); // Reset if clicks aren't fast enough
+            }
+            
+            if (clickCount === 3) {
+                clearTimeout(clickTimer);
+                clickCount = 0;
+                isLocked = false;
+                lockOverlay.classList.remove('active');
+            }
+        });
+        
+        // Prevent touch events on overlay from propagating
+        lockOverlay.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        });
+        
+        // Initialize
+        loadChannel();
+        connectWebSocket();
+    </script>
+</body>
 </html>
