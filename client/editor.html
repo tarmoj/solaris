@@ -285,7 +285,7 @@
         
         function connectWebSocket() {
             try {
-                ws = new WebSocket('wss://live.uuu.ee');
+                ws = new WebSocket('wss://live.uuu.ee:1234');
                 
                 ws.onopen = () => {
                     console.log('WebSocket connected');
@@ -348,7 +348,7 @@
             try {
                 ws.send(message);
                 lastGeneratedFile = { fileName, channel };
-                showStatus('commandStatus', 'Command sent successfully! File will be available at: audio/' + channel + '/' + fileName + '.mp3', 'success');
+                showStatus('commandStatus', 'Command sent successfully! File will be available at: audio/audiofiles/' + fileName + '.mp3', 'success');
                 
                 // Enable listen button after a delay to allow file generation
                 setTimeout(() => {
@@ -396,8 +396,8 @@
             try {
                 showStatus('eventsStatus', 'Loading events...', 'info');
                 
-                // Fetch events.txt from parent directory (relative to client folder)
-                const response = await fetch('../events.txt');
+                // Fetch events.txt,  from parent directory (relative to client folder, force to reload)
+                const response = await fetch(`../events.txt?nocache=${Date.now()}`);
                 
                 if (!response.ok) {
                     throw new Error('Failed to load events.txt: ' + response.statusText);
@@ -405,6 +405,7 @@
                 
                 const text = await response.text();
                 const lines = text.trim().split('\n').filter(line => line.trim());
+                console.log("Lines read: ", lines)
                 
                 const tbody = document.getElementById('eventsBody');
                 tbody.innerHTML = '';
@@ -448,7 +449,7 @@
             fileName = fileName.replace('.mp3', '');
             
             // Construct path: ../audio/channel/fileName.mp3
-            const audioPath = `../audio/${channel}/${fileName}.mp3`;
+            const audioPath = `../audio/audiofiles/${fileName}.mp3`;
             
             console.log('Playing audio:', audioPath);
             
@@ -456,8 +457,12 @@
             audio.play().then(() => {
                 console.log('Playing audio file:', audioPath);
             }).catch(error => {
-                console.error('Error playing audio:', error);
-                alert('Error playing audio file: ' + audioPath + '\n' + error.message);
+                if (error.name === 'AbortError') {
+                    console.log('Playback ended normally.');
+                } else {
+                    console.error('Playback failed:', error);
+                    alert('Error playing audio file: ' + audioPath + '\n' + error.message);
+                }
             });
         }
         
