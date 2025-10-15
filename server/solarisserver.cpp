@@ -284,11 +284,11 @@ void SolarisServer::processBinaryMessage(QByteArray message)
 
 void SolarisServer::sendEvent()
 {
-    // send 'play|[channel]<-to be added|fileName|text' to players --  later: filter by channel, now send to all and let client filter.
+    // send 'play|channel|fileName|text' to players --  later: filter by channel, now send to all and let client filter.
 
     // test:
 
-    sendToAll("play|asFastPossible.mp3|Mängi nii kiiresti kui saad!");
+    sendToAll("play|0|asFastPossible.mp3|Mängi nii kiiresti kui saad!");
 }
 
 void SolarisServer::sendToAll(QString message )

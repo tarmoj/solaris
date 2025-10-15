@@ -396,16 +396,21 @@
             // Expected format: 'play|fileName|text'
             const parts = message.split('|');
             
-            if (parts.length >= 3 && parts[0].trim().toLowerCase() === 'play') {
-                const fileName = parts[1].trim();
-                const text = parts.slice(2).join('|').trim(); // Rejoin in case text contains |
+            if (parts.length >= 4 && parts[0].trim().toLowerCase() === 'play') {
+                const channel = parseInt(parts[1].trim());
+                const fileName = parts[2].trim();
+                const text = parts[3].trim(); 
                 
-                // Display the text
-                displayText.textContent = text;
-                displayText.className = 'display-text';
-                
-                // Play the audio file
-                playAudio(fileName);
+                if (channel===0 || channel===currentChannel) { // chanel 0 means: for everyone
+                  // Display the text
+                  displayText.textContent = text;
+                  displayText.className = 'display-text';
+                  console.log("Play in channel: ", currentChannel, channel, fileName);
+                  // Play the audio file
+                  playAudio(fileName); 
+                } else {
+                  console.log("Message ignored for channel", channel);
+                }
             } else {
                 console.warn('Unexpected message format:', message);
             }
