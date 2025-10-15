@@ -22,6 +22,10 @@ public:
     explicit SolarisServer(quint16 port, QObject *parent = nullptr);
     ~SolarisServer() override;
 
+    void sendToAll(QString message);
+
+    void sendPlay();
+
 private Q_SLOTS:
     void onNewConnection();
     void processTextMessage(QString message);

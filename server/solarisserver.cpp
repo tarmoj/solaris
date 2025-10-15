@@ -123,20 +123,21 @@ void SolarisServer::processTextMessage(QString message)
     //QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     qDebug()  << "Message received: " << message;
     
+    QStringList messagemessageParts = message.split("|");
+
     // Check if the message is in the format "generate | text | filename | channel | time"
     if (message.startsWith("generate") ) {
-        QStringList parts = message.split("|");
         
         // Trim whitespace from each part
-        for (int i = 0; i < parts.size(); ++i) {
-            parts[i] = parts[i].trimmed();
+        for (int i = 0; i < messageParts.size(); ++i) {
+            messageParts[i] = messageParts[i].trimmed();
         }
         
-        if (parts.size() >= 5 && parts[0] == "generate") {
-            QString text = parts[1];
-            QString filename = parts[2];
-            QString channel = parts[3];
-            QString time = parts[4];
+        if (messageParts.size() >= 5 && messageParts[0] == "generate") {
+            QString text = messageParts[1];
+            QString filename = messageParts[2];
+            QString channel = messageParts[3];
+            QString time = messageParts[4];
             
             qDebug() << "Processing TTS request - text:" << text << "filename:" << filename 
                      << "channel:" << channel << "time:" << time;
@@ -252,8 +253,10 @@ void SolarisServer::processTextMessage(QString message)
                 qWarning() << "Generator script timed out or failed to start";
             }
         } else {
-            qWarning() << "Invalid generate message format. Expected 5 parts, got:" << parts.size();
+            qWarning() << "Invalid generate message format. Expected 5 messageParts, got:" << messageParts.size();
         }
+    } else if (messageParts[0] == "sendCommand") { // send  command to all connected clients
+
     } else {
 
         // Echo message to all clients (keep existing behavior)
@@ -277,6 +280,27 @@ void SolarisServer::processBinaryMessage(QByteArray message)
     }
 }
 //! [processBinaryMessage]
+
+
+void SolarisServer::sendEvent()
+{
+    // send 'play|[channel]<-to be added|fileName|text' to players --  later: filter by channel, now send to all and let client filter.
+
+    // test:
+
+    sendToAll("play|asFastPossible.mp3|Mängi nii kiiresti kui saad!");
+}
+
+void SolarisServer::sendToAll(QString message )
+{
+    foreach(QWebSocket *socket, m_clients) {
+        if (socket)
+        {
+            socket->sendTextMessage(message);
+        }
+    }
+}
+
 
 //! [socketDisconnected]
 void SolarisServer::socketDisconnected()

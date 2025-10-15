@@ -472,7 +472,7 @@
         });
         
         // Triple-click/tap to unlock
-        lockOverlay.addEventListener('click', () => {
+        lockOverlay.addEventListener('pointerdown', () => {
             clickCount++;
             
             if (clickCount === 1) {
