@@ -24,7 +24,7 @@ public:
 
     void sendToAll(QString message);
 
-    void sendPlay();
+    void sendTest();
 
 private Q_SLOTS:
     void onNewConnection();

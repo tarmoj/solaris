@@ -123,7 +123,7 @@ void SolarisServer::processTextMessage(QString message)
     //QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     qDebug()  << "Message received: " << message;
     
-    QStringList messagemessageParts = message.split("|");
+    QStringList messageParts = message.split("|");
 
     // Check if the message is in the format "generate | text | filename | channel | time"
     if (message.startsWith("generate") ) {
@@ -257,6 +257,8 @@ void SolarisServer::processTextMessage(QString message)
         }
     } else if (messageParts[0] == "sendCommand") { // send  command to all connected clients
 
+    } else if (messageParts[0] == "test") {
+        sendTest();
     } else {
 
         // Echo message to all clients (keep existing behavior)
@@ -282,13 +284,11 @@ void SolarisServer::processBinaryMessage(QByteArray message)
 //! [processBinaryMessage]
 
 
-void SolarisServer::sendEvent()
+void SolarisServer::sendTest()
 {
-    // send 'play|channel|fileName|text' to players --  later: filter by channel, now send to all and let client filter.
-
-    // test:
-
-    sendToAll("play|0|asFastPossible.mp3|Mängi nii kiiresti kui saad!");
+    // format: 'play|channel|fileName|text' to players
+    qDebug() << "Sending test command";
+    sendToAll("play|0|test.mp3|Test. Test? Test!");
 }
 
 void SolarisServer::sendToAll(QString message )
