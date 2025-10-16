@@ -15,10 +15,11 @@
 
 QT_USE_NAMESPACE
 
-//! [constructor]
 SolarisServer::SolarisServer(quint16 port, QObject *parent) :
     QObject(parent),
-    m_pWebSocketServer(nullptr)
+    m_pWebSocketServer(nullptr),
+    audioDir(QString()),
+    counter(START_FROM)
 {
     m_pWebSocketServer = new QWebSocketServer(QStringLiteral("SSL Echo Server"),
                                               QWebSocketServer::SecureMode,
@@ -41,9 +42,33 @@ SolarisServer::SolarisServer(quint16 port, QObject *parent) :
                 this, &SolarisServer::onNewConnection);
         connect(m_pWebSocketServer, &QWebSocketServer::sslErrors,
                 this, &SolarisServer::onSslErrors);
+
+        float m_speed = 1; // be ready set the speed, if needed
+        timer.setInterval(1000/m_speed);
+        connect(&timer, SIGNAL(timeout()), this, SLOT(counterChanged()) );
+
+        // Get the audio directory path (assuming it's ../audio relative to the executable)
+        audioDir = QDir::currentPath() + "/../../../audio";
+        QDir dir(audioDir);
+        if (!dir.exists()) {
+            // Try alternative path
+            audioDir = QDir::currentPath() + "/../../audio";
+            dir.setPath(audioDir);
+            if (!dir.exists()) {
+                qWarning() << "Audio directory not found:" << audioDir;
+                return;
+            }
+        }
+        audioDir = dir.absolutePath();
+        QDir audioDirObj(audioDir);
+        audioDirObj.cdUp();  // Go to parent directory
+        eventsFile = audioDirObj.absolutePath() + "/events.txt";
+
+        loadEntries();
+
     }
 }
-//! [constructor]
+
 
 SolarisServer::~SolarisServer()
 {
@@ -101,7 +126,7 @@ bool SolarisServer::prepareSsl(const QString &certPath, const QString &keyPath) 
     return true;
 }
 
-//! [onNewConnection]
+
 void SolarisServer::onNewConnection()
 {
     QWebSocket *pSocket = m_pWebSocketServer->nextPendingConnection();
@@ -115,18 +140,37 @@ void SolarisServer::onNewConnection()
 
     m_clients << pSocket;
 }
-//! [onNewConnection]
 
-//! [processTextMessage]
 void SolarisServer::processTextMessage(QString message)
 {
     //QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     qDebug()  << "Message received: " << message;
     
     QStringList messageParts = message.split("|");
+    QString command = messageParts.count()>0 ? messageParts[0].trimmed(): "";
+
+
+    if (command=="start") {
+        timer.start();
+    }
+    if (command=="stop") {
+        timer.stop();
+        counter = START_FROM;
+    }
+    if (command=="test") {
+        sendTest();
+    }
+    if (command=="seek" && messageParts.count()>2) {
+        bool ok;
+        int time = messageParts[2].toInt(&ok);
+        if (ok) {
+            counter = time;
+            qDebug()<< "Set time to: " << time;
+        }
+    }
 
     // Check if the message is in the format "generate | text | filename | channel | time"
-    if (message.startsWith("generate") ) {
+    if ( command == "generate") {
         
         // Trim whitespace from each part
         for (int i = 0; i < messageParts.size(); ++i) {
@@ -142,19 +186,6 @@ void SolarisServer::processTextMessage(QString message)
             qDebug() << "Processing TTS request - text:" << text << "filename:" << filename 
                      << "channel:" << channel << "time:" << time;
             
-            // Get the audio directory path (assuming it's ../audio relative to the executable)
-            QString audioDir = QDir::currentPath() + "/../../../audio";
-            QDir dir(audioDir);
-            if (!dir.exists()) {
-                // Try alternative path
-                audioDir = QDir::currentPath() + "/../../audio";
-                dir.setPath(audioDir);
-                if (!dir.exists()) {
-                    qWarning() << "Audio directory not found:" << audioDir;
-                    return;
-                }
-            }
-            audioDir = dir.absolutePath();
             
             // Path to the generator script
             QString generatorScript = audioDir + "/generator.py";
@@ -198,51 +229,15 @@ void SolarisServer::processTextMessage(QString message)
                 }
                 
                 if (exitCode == 0) {
-                    // Success! Add entry to events.txt in parent directory of audio
-                    QDir audioDirObj(audioDir);
-                    audioDirObj.cdUp();  // Go to parent directory
-                    QString eventsFile = audioDirObj.absolutePath() + "/events.txt";
-                    
+
                     // Create the new entry
                     QString newEntry = QString("%1|%2|%3.mp3|%4").arg(time).arg(channel).arg(filename).arg(text);
-                    
-                    // Read existing entries
-                    QStringList entries;
-                    QFile file(eventsFile);
-                    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                        QTextStream in(&file);
-                        while (!in.atEnd()) {
-                            QString line = in.readLine().trimmed();
-                            if (!line.isEmpty()) {
-                                entries.append(line);
-                            }
-                        }
-                        file.close();
-                    }
-                    
+
                     // Check if the exact same entry already exists
                     if (!entries.contains(newEntry)) {
                         // Add the new entry
                         entries.append(newEntry);
-                        
-                        // Sort entries by time field (first field before first |)
-                        std::sort(entries.begin(), entries.end(), [](const QString &a, const QString &b) {
-                            QString timeA = a.section('|', 0, 0);
-                            QString timeB = b.section('|', 0, 0);
-                            return timeA < timeB;
-                        });
-                        
-                        // Write all sorted entries back to file
-                        if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-                            QTextStream out(&file);
-                            for (const QString &entry : entries) {
-                                out << entry << "\n";
-                            }
-                            file.close();
-                            qDebug() << "Successfully added and sorted entry in events.txt";
-                        } else {
-                            qWarning() << "Failed to open events.txt for writing:" << eventsFile;
-                        }
+                        sortAndSaveEntries();
                     } else {
                         qDebug() << "Entry already exists in events.txt, skipping duplicate";
                     }
@@ -257,8 +252,6 @@ void SolarisServer::processTextMessage(QString message)
         }
     } else if (messageParts[0] == "sendCommand") { // send  command to all connected clients
 
-    } else if (messageParts[0] == "test") {
-        sendTest();
     } else {
 
         // Echo message to all clients (keep existing behavior)
@@ -270,9 +263,7 @@ void SolarisServer::processTextMessage(QString message)
     }
 
 }
-//! [processTextMessage]
 
-//! [processBinaryMessage]
 void SolarisServer::processBinaryMessage(QByteArray message)
 {
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
@@ -281,7 +272,7 @@ void SolarisServer::processBinaryMessage(QByteArray message)
         pClient->sendBinaryMessage(message);
     }
 }
-//! [processBinaryMessage]
+
 
 
 void SolarisServer::sendTest()
@@ -302,7 +293,6 @@ void SolarisServer::sendToAll(QString message )
 }
 
 
-//! [socketDisconnected]
 void SolarisServer::socketDisconnected()
 {
     qDebug() << "Client disconnected";
@@ -318,4 +308,79 @@ void SolarisServer::onSslErrors(const QList<QSslError> &)
 {
     qDebug() << "Ssl errors occurred";
 }
-//! [socketDisconnected]
+
+
+void SolarisServer::loadEntries()
+{
+    // Read existing entries
+    entries.clear();
+    QFile file(eventsFile);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine().trimmed();
+            if (!line.isEmpty()) {
+                entries.append(line);
+            }
+        }
+        file.close();
+    }
+}
+
+void SolarisServer::sortAndSaveEntries()
+{
+    // Sort entries by time field (first field before first |)
+    std::sort(entries.begin(), entries.end(), [](const QString &a, const QString &b) {
+        QString timeA = a.section('|', 0, 0);
+        QString timeB = b.section('|', 0, 0);
+        return timeA < timeB;
+    });
+
+    // Write all sorted entries back to file
+    QFile file(eventsFile);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QTextStream out(&file);
+        for (const QString &entry : entries) {
+            out << entry << "\n";
+        }
+        file.close();
+        qDebug() << "Successfully added and sorted entry in events.txt";
+    } else {
+        qWarning() << "Failed to open events.txt for writing:" << eventsFile;
+    }
+}
+
+
+
+void SolarisServer::counterChanged() // timer timeOut slot
+{
+
+    qDebug() << "Counter: " << counter;
+    counter++;
+    if (counter>1200) {
+        timer.stop();
+        qDebug()<< "Should be finished";
+        counter = START_FROM;
+    }
+
+    for (QString const &entry: entries) { // TODO: better keep entries as array of struct/object, not string, avoid split
+        QStringList parts = entry.split("|");
+        if (parts.count()>0) {
+            QStringList timeParts = parts[0].trimmed().split(":"); // <- stupid code!!! rewrite to struct! this is just for testing!
+            int minutes = timeParts[0].toInt();
+            int seconds = timeParts[1].toInt();
+            int time = minutes*60 + seconds;
+            if (counter==1) {
+                qDebug() << "counterChanged: " << parts[0] << minutes << seconds ;
+            }
+            if (time == counter) {
+                // stored as:  QString("%1|%2|%3.mp3|%4").arg(time).arg(channel).arg(filename).arg(text);
+                sendToAll(QString("play|%1|%2|%3").arg(parts[1]).arg(parts[2]).arg(parts[3]));  // play|time|channel|fileName|text
+            }
+        }
+
+    }
+
+    sendToAll("time|" + QString::number(counter)); // or rather send as a string 00:00
+
+}
