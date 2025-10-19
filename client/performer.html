@@ -299,6 +299,7 @@
                     <div class="volume-value" id="volumeValue">80%</div>
                 </div>
                 
+                <button id="enableAudioBtn">Enable Audio</button>
                 <button id="connectBtn" class="hidden">Connect</button>
                 <button id="lockBtn">Lock Mode</button>
             </div>
@@ -329,11 +330,15 @@
         const channelInput = document.getElementById('channelInput');
         const volumeSlider = document.getElementById('volumeSlider');
         const volumeValue = document.getElementById('volumeValue');
+        const enableAudioBtn = document.getElementById('enableAudioBtn');
         const connectBtn = document.getElementById('connectBtn');
         const lockBtn = document.getElementById('lockBtn');
         const statusDisplay = document.getElementById('statusDisplay');
         const displayText = document.getElementById('displayText');
         const lockOverlay = document.getElementById('lockOverlay');
+        
+        let audioContext = null;
+        let audioEnabled = false;
         
         // Load saved channel from localStorage
         function loadChannel() {
@@ -463,6 +468,20 @@
             const value = parseInt(e.target.value);
             volumeLevel = value / 100;
             volumeValue.textContent = value + '%';
+        });
+        
+        // Enable Audio button handler
+        enableAudioBtn.addEventListener('click', () => {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            audioContext.resume().then(() => {
+                audioEnabled = true;
+                enableAudioBtn.textContent = 'Audio Enabled ✓';
+                enableAudioBtn.disabled = true;
+                enableAudioBtn.style.background = '#2d5016';
+                console.log('Audio context enabled');
+            });
         });
         
         // Connect button handler

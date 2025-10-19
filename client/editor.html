@@ -414,6 +414,10 @@
                 <button type="button" id="seekBtn" class="secondary">Seek</button>
                 <input type="text" id="seekTime" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}" style="width: 100px; padding: 10px; background: #3a3a3a; border: 1px solid #4a4a4a; border-radius: 5px; color: #e0e0e0;">
             </div>
+            <div style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 5px; text-align: center;">
+                <span style="color: #aaa; margin-right: 10px;">Current Time:</span>
+                <span id="currentTimeDisplay" style="color: #4a9eff; font-size: 1.2em; font-weight: bold;">00:00</span>
+            </div>
             <div id="eventsStatus" class="status hidden"></div>
             <div class="table-wrapper">
                 <table id="eventsTable">
@@ -451,7 +455,7 @@
                 
                 <div class="form-group">
                     <label for="editCommandName">Command Name (no spaces):</label>
-                    <input type="text" id="editCommandName" required pattern="[^\s]+" readonly>
+                    <input type="text" id="editCommandName" required pattern="[^\s]+">
                 </div>
                 
                 <div class="button-group">
@@ -526,7 +530,15 @@
                 
                 ws.onmessage = (event) => {
                     console.log('Received message:', event.data);
-                    // Handle server responses if needed
+                    // Handle time messages
+                    const message = event.data;
+                    if (message.startsWith('time|')) {
+                        const timeInSeconds = parseInt(message.split('|')[1]);
+                        const minutes = Math.floor(timeInSeconds / 60);
+                        const seconds = timeInSeconds % 60;
+                        const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        document.getElementById('currentTimeDisplay').textContent = timeStr;
+                    }
                 };
             } catch (error) {
                 console.error('Failed to create WebSocket:', error);
