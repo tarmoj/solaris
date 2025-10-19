@@ -526,7 +526,17 @@ void SolarisServer::counterChanged() // timer timeOut slot
         
         if (eventTime == counter) {
             QString commandName = event["name"].toString();
-            QString channel = event["channel"].toString();
+            
+            // Handle both "channels" array and old "channel" string format
+            QStringList channelsList;
+            if (event.contains("channels") && event["channels"].isArray()) {
+                QJsonArray channelsArray = event["channels"].toArray();
+                for (const QJsonValue &chValue : channelsArray) {
+                    channelsList.append(chValue.toString());
+                }
+            } else if (event.contains("channel")) {
+                channelsList.append(event["channel"].toString());
+            }
             
             // Find the command to get the text and filename
             QString text = "";
@@ -541,8 +551,17 @@ void SolarisServer::counterChanged() // timer timeOut slot
                 }
             }
             
-            // Send play command: play|channel|fileName|text
-            sendToAll(QString("play|%1|%2|%3").arg(channel).arg(fileName).arg(text));
+            // Send play command to each channel (unless channel is "0" which means send to all)
+            for (const QString &channel : channelsList) {
+                if (channel == "0") {
+                    // Send to all channels
+                    sendToAll(QString("play|0|%1|%2").arg(fileName).arg(text));
+                    break; // No need to send to other channels if we're sending to all
+                } else {
+                    // Send to specific channel
+                    sendToAll(QString("play|%1|%2|%3").arg(channel).arg(fileName).arg(text));
+                }
+            }
         }
     }
 

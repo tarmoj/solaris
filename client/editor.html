@@ -71,7 +71,8 @@
         }
         
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 10px;
             background: #3a3a3a;
@@ -83,7 +84,8 @@
         }
         
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #4a9eff;
         }
@@ -356,7 +358,7 @@
                             <th>Command Name</th>
                             <th>File Name</th>
                             <th>Text</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="commandsBody">
@@ -379,8 +381,8 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="eventChannel">Channel (1-12, 0 - send to all):</label>
-                        <input type="number" id="eventChannel" min="0" max="12" value="1" required>
+                        <label for="eventChannel">Channels (comma-separated, e.g., 1,3,12 or 0 for all):</label>
+                        <input type="text" id="eventChannel" placeholder="1" required>
                     </div>
                 </div>
                 
@@ -402,8 +404,16 @@
         <!-- Events Table Section -->
         <section class="section">
             <h2>Events</h2>
-            <button type="button" id="refreshBtn" class="secondary">Refresh Events</button>
-            <button type="button" id="testBtn" class="secondary">Test Event</button>
+            <div class="button-group">
+                <button type="button" id="refreshBtn" class="secondary">Refresh Events</button>
+                <button type="button" id="testBtn" class="secondary">Test Event</button>
+            </div>
+            <div class="button-group" style="margin-top: 15px;">
+                <button type="button" id="startBtn">Start</button>
+                <button type="button" id="stopBtn" class="secondary">Stop</button>
+                <button type="button" id="seekBtn" class="secondary">Seek</button>
+                <input type="text" id="seekTime" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}" style="width: 100px; padding: 10px; background: #3a3a3a; border: 1px solid #4a4a4a; border-radius: 5px; color: #e0e0e0;">
+            </div>
             <div id="eventsStatus" class="status hidden"></div>
             <div class="table-wrapper">
                 <table id="eventsTable">
@@ -425,6 +435,33 @@
         </section>
     </div>
     
+    <!-- Edit Command Modal -->
+    <div id="editCommandModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Command</h3>
+                <button class="close-btn" onclick="closeEditCommandModal()">&times;</button>
+            </div>
+            <form id="editCommandForm">
+                <input type="hidden" id="editCommandIndex">
+                <div class="form-group">
+                    <label for="editCommandText">Command Text:</label>
+                    <textarea id="editCommandText" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editCommandName">Command Name (no spaces):</label>
+                    <input type="text" id="editCommandName" required pattern="[^\s]+" readonly>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit">Save Changes</button>
+                    <button type="button" class="secondary" onclick="closeEditCommandModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <!-- Edit Event Modal -->
     <div id="editEventModal" class="modal">
         <div class="modal-content">
@@ -441,8 +478,8 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="editEventChannel">Channel (1-12, 0 - send to all):</label>
-                        <input type="number" id="editEventChannel" min="0" max="12" required>
+                        <label for="editEventChannel">Channels (comma-separated):</label>
+                        <input type="text" id="editEventChannel" required>
                     </div>
                 </div>
                 
@@ -612,12 +649,84 @@
             } 
         });
         
+        // Start button handler
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const seekTime = document.getElementById('seekTime').value.trim();
+            let message = 'start';
+            
+            if (seekTime) {
+                // Validate time format
+                const timePattern = /^[0-9]{2}:[0-9]{2}$/;
+                if (timePattern.test(seekTime)) {
+                    const [minutes, seconds] = seekTime.split(':').map(Number);
+                    const timeInSeconds = minutes * 60 + seconds;
+                    message = `start|${timeInSeconds}`;
+                }
+            }
+            
+            try {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(message);
+                    showStatus('eventsStatus', 'Start command sent', 'success');
+                } else {
+                    showStatus('eventsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('eventsStatus', 'Failed to send start command: ' + error.message, 'error');
+            }
+        });
+        
+        // Stop button handler
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            try {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('stop');
+                    showStatus('eventsStatus', 'Stop command sent', 'success');
+                } else {
+                    showStatus('eventsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('eventsStatus', 'Failed to send stop command: ' + error.message, 'error');
+            }
+        });
+        
+        // Seek button handler
+        document.getElementById('seekBtn').addEventListener('click', () => {
+            const seekTime = document.getElementById('seekTime').value.trim();
+            
+            if (!seekTime) {
+                showStatus('eventsStatus', 'Please enter a time to seek to', 'error');
+                return;
+            }
+            
+            // Validate time format
+            const timePattern = /^[0-9]{2}:[0-9]{2}$/;
+            if (!timePattern.test(seekTime)) {
+                showStatus('eventsStatus', 'Invalid time format. Please use MM:SS', 'error');
+                return;
+            }
+            
+            const [minutes, seconds] = seekTime.split(':').map(Number);
+            const timeInSeconds = minutes * 60 + seconds;
+            
+            try {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(`seek|${timeInSeconds}`);
+                    showStatus('eventsStatus', `Seek to ${seekTime} sent`, 'success');
+                } else {
+                    showStatus('eventsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('eventsStatus', 'Failed to send seek command: ' + error.message, 'error');
+            }
+        });
+        
         // New Event form submission handler
         document.getElementById('eventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const time = document.getElementById('eventTime').value.trim();
-            const channel = document.getElementById('eventChannel').value;
+            const channelInput = document.getElementById('eventChannel').value.trim();
             const commandName = document.getElementById('eventCommand').value;
             
             // Validate time format (MM:SS)
@@ -631,6 +740,9 @@
                 showStatus('eventStatus', 'Please select a command', 'error');
                 return;
             }
+            
+            // Parse channels - split by comma and trim each value
+            const channels = channelInput.split(',').map(ch => ch.trim()).filter(ch => ch !== '');
             
             try {
                 // Load current data
@@ -647,10 +759,10 @@
                 const [minutes, seconds] = time.split(':').map(Number);
                 const timeInSeconds = minutes * 60 + seconds;
                 
-                // Add new event
+                // Add new event with channels as array
                 data.events.push({
                     time: timeInSeconds,
-                    channel: channel,
+                    channels: channels,
                     name: commandName
                 });
                 
@@ -661,7 +773,7 @@
                     
                     // Clear form
                     document.getElementById('eventTime').value = '';
-                    document.getElementById('eventChannel').value = '1';
+                    document.getElementById('eventChannel').value = '';
                     document.getElementById('eventCommand').value = '';
                     
                     // Refresh events table
@@ -682,8 +794,11 @@
             
             const index = parseInt(document.getElementById('editEventIndex').value);
             const time = document.getElementById('editEventTime').value.trim();
-            const channel = document.getElementById('editEventChannel').value;
+            const channelInput = document.getElementById('editEventChannel').value.trim();
             const commandName = document.getElementById('editEventCommand').value;
+            
+            // Parse channels - split by comma and trim each value
+            const channels = channelInput.split(',').map(ch => ch.trim()).filter(ch => ch !== '');
             
             try {
                 // Load current data
@@ -694,10 +809,10 @@
                 const [minutes, seconds] = time.split(':').map(Number);
                 const timeInSeconds = minutes * 60 + seconds;
                 
-                // Update event
+                // Update event with channels as array
                 data.events[index] = {
                     time: timeInSeconds,
-                    channel: channel,
+                    channels: channels,
                     name: commandName
                 };
                 
@@ -719,6 +834,54 @@
             }
         });
         
+        // Edit Command form submission handler
+        document.getElementById('editCommandForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const index = parseInt(document.getElementById('editCommandIndex').value);
+            const text = document.getElementById('editCommandText').value.trim();
+            const commandName = document.getElementById('editCommandName').value.trim();
+            
+            try {
+                // Load current data
+                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                let data = await response.json();
+                
+                // Update command text (name and fileName stay the same)
+                data.commands[index] = {
+                    name: commandName,
+                    fileName: commandName + '.mp3',
+                    text: text
+                };
+                
+                // Send to server to regenerate audio
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    // First send the generateCommand to update audio
+                    ws.send(`generateCommand | ${text} | ${commandName}`);
+                    
+                    // Then update JSON
+                    setTimeout(() => {
+                        ws.send('updateJSON | ' + JSON.stringify(data));
+                    }, 100);
+                    
+                    closeEditCommandModal();
+                    showStatus('commandsStatus', 'Command updated successfully!', 'success');
+                    
+                    // Refresh commands table
+                    setTimeout(() => {
+                        loadCommands();
+                    }, 1000);
+                } else {
+                    showStatus('commandsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('commandsStatus', 'Failed to update command: ' + error.message, 'error');
+            }
+        });
+        
+        // Global commands array
+        let commandsData = [];
+        
         // Function to load commands from solaris.json
         async function loadCommands() {
             try {
@@ -731,23 +894,28 @@
                 }
                 
                 const data = await response.json();
+                commandsData = data.commands || [];
                 const tbody = document.getElementById('commandsBody');
                 tbody.innerHTML = '';
                 
-                if (!data.commands || data.commands.length === 0) {
+                if (commandsData.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No commands found</td></tr>';
                     showStatus('commandsStatus', 'No commands found in solaris.json', 'info');
                     return;
                 }
                 
                 // Display each command
-                data.commands.forEach(command => {
+                commandsData.forEach((command, index) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${escapeHtml(command.name)}</td>
                         <td>${escapeHtml(command.fileName)}</td>
                         <td>${escapeHtml(command.text)}</td>
-                        <td><button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(command.name)}')">Play</button></td>
+                        <td>
+                            <button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(command.name)}')">Play</button>
+                            <button class="edit-btn" onclick="editCommand(${index})">Edit</button>
+                            <button class="delete-btn" onclick="deleteCommand(${index})">Delete</button>
+                        </td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -759,7 +927,7 @@
                 eventCommandSelect.innerHTML = '<option value="">Select a command...</option>';
                 editEventCommandSelect.innerHTML = '<option value="">Select a command...</option>';
                 
-                data.commands.forEach(command => {
+                commandsData.forEach(command => {
                     const option1 = document.createElement('option');
                     option1.value = command.name;
                     option1.textContent = command.name;
@@ -771,7 +939,7 @@
                     editEventCommandSelect.appendChild(option2);
                 });
                 
-                showStatus('commandsStatus', `Loaded ${data.commands.length} command(s) successfully`, 'success');
+                showStatus('commandsStatus', `Loaded ${commandsData.length} command(s) successfully`, 'success');
             } catch (error) {
                 console.error('Error loading commands:', error);
                 document.getElementById('commandsBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff8a8a;">Error loading commands: ' + escapeHtml(error.message) + '</td></tr>';
@@ -839,10 +1007,13 @@
                 const seconds = event.time % 60;
                 const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                 
+                // Handle channels - display as comma-separated if array, otherwise show single channel
+                const channelsDisplay = Array.isArray(event.channels) ? event.channels.join(', ') : (event.channel || '');
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${escapeHtml(timeStr)}</td>
-                    <td>${escapeHtml(event.channel)}</td>
+                    <td>${escapeHtml(channelsDisplay)}</td>
                     <td>${escapeHtml(event.name)}</td>
                     <td>
                         <button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(event.name)}')">Play</button>
@@ -872,8 +1043,9 @@
                     valA = a.time;
                     valB = b.time;
                 } else if (column === 'channel') {
-                    valA = parseInt(a.channel);
-                    valB = parseInt(b.channel);
+                    // Handle both array and single channel
+                    valA = Array.isArray(a.channels) ? parseInt(a.channels[0]) : parseInt(a.channel || 0);
+                    valB = Array.isArray(b.channels) ? parseInt(b.channels[0]) : parseInt(b.channel || 0);
                 }
                 
                 if (currentSort.direction === 'asc') {
@@ -911,10 +1083,13 @@
             const seconds = event.time % 60;
             const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             
+            // Convert channels array to comma-separated string
+            const channelsStr = Array.isArray(event.channels) ? event.channels.join(', ') : (event.channel || '1');
+            
             // Populate form
             document.getElementById('editEventIndex').value = index;
             document.getElementById('editEventTime').value = timeStr;
-            document.getElementById('editEventChannel').value = event.channel;
+            document.getElementById('editEventChannel').value = channelsStr;
             document.getElementById('editEventCommand').value = event.name;
             
             // Show modal
@@ -924,6 +1099,57 @@
         // Function to close edit modal
         function closeEditModal() {
             document.getElementById('editEventModal').classList.remove('show');
+        }
+        
+        // Function to edit command
+        async function editCommand(index) {
+            const command = commandsData[index];
+            
+            // Populate form
+            document.getElementById('editCommandIndex').value = index;
+            document.getElementById('editCommandText').value = command.text;
+            document.getElementById('editCommandName').value = command.name;
+            
+            // Show modal
+            document.getElementById('editCommandModal').classList.add('show');
+        }
+        
+        // Function to close edit command modal
+        function closeEditCommandModal() {
+            document.getElementById('editCommandModal').classList.remove('show');
+        }
+        
+        // Function to delete command
+        async function deleteCommand(index) {
+            const command = commandsData[index];
+            
+            if (!confirm(`Are you sure you want to delete command "${command.name}"?`)) {
+                return;
+            }
+            
+            try {
+                // Load current data
+                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                let data = await response.json();
+                
+                // Remove command
+                data.commands.splice(index, 1);
+                
+                // Send to server
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('updateJSON | ' + JSON.stringify(data));
+                    showStatus('commandsStatus', 'Command deleted successfully!', 'success');
+                    
+                    // Refresh commands table
+                    setTimeout(() => {
+                        loadCommands();
+                    }, 500);
+                } else {
+                    showStatus('commandsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('commandsStatus', 'Failed to delete command: ' + error.message, 'error');
+            }
         }
         
         // Function to delete event
@@ -961,6 +1187,9 @@
         window.editEvent = editEvent;
         window.closeEditModal = closeEditModal;
         window.deleteEvent = deleteEvent;
+        window.editCommand = editCommand;
+        window.closeEditCommandModal = closeEditCommandModal;
+        window.deleteCommand = deleteCommand;
         
         // Function to play audio file
         function playAudioFile(directory, fileName) {

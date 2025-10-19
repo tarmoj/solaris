@@ -18,12 +18,12 @@
     ],
     "events": [
         {
-            "channel": "1",
+            "channels": ["1"],
             "name": "test",
             "time": 0
         },
         {
-            "channel": "1",
+            "channels": ["1", "2", "3"],
             "name": "playLoud",
             "time": 20
         }
