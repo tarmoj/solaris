@@ -26,6 +26,9 @@ public:
 
     void loadEntries();
     void sortAndSaveEntries();
+    
+    void loadSolarisJSON();
+    void saveSolarisJSON();
 
     void sendToAll(QString message);
     void sendTest();
@@ -52,6 +55,8 @@ private:
     QString audioDir;
     QStringList entries;
     QString eventsFile;
+    QString solarisJSONFile;
+    QJsonObject solarisData;
 
 };
 
