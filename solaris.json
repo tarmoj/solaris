@@ -1,26 +1,31 @@
 {
-  "commands": [
-    {
-      "name": "test",
-      "fileName": "test.mp3",
-      "text": "Test. Test. Test."
-    },
-    {
-      "name": "greeting",
-      "fileName": "greeting.mp3",
-      "text": "Welcome to Solaris!"
-    }
-  ],
-  "events": [
-    {
-      "time": 0,
-      "channel": "1",
-      "name": "test"
-    },
-    {
-      "time": 14,
-      "channel": "2",
-      "name": "greeting"
-    }
-  ]
+    "commands": [
+        {
+            "fileName": "test.mp3",
+            "name": "test",
+            "text": "Test. Test. Test."
+        },
+        {
+            "fileName": "greeting.mp3",
+            "name": "greeting",
+            "text": "Welcome to Solaris!"
+        },
+        {
+            "fileName": "playLoud.mp3",
+            "name": "playLoud",
+            "text": "Mängi valjult!"
+        }
+    ],
+    "events": [
+        {
+            "channel": "1",
+            "name": "test",
+            "time": 0
+        },
+        {
+            "channel": "1",
+            "name": "playLoud",
+            "time": 20
+        }
+    ]
 }

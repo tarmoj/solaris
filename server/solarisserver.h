@@ -11,6 +11,7 @@
 #include <QtNetwork/QSslKey>
 #include <QSslConfiguration>
 #include <QTimer>
+#include <QJsonObject>
 
 QT_FORWARD_DECLARE_CLASS(QWebSocketServer)
 QT_FORWARD_DECLARE_CLASS(QWebSocket)
