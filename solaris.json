@@ -1,0 +1,16 @@
+{
+  "commands": [
+    {
+      "name": "test",
+      "fileName": "test.mp3",
+      "text": "Test. Test. Test."
+    }
+  ],
+  "events": [
+    {
+      "time": 0,
+      "channel": "1",
+      "name": "test"
+    }
+  ]
+}

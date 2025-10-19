@@ -226,30 +226,42 @@
                     <textarea id="commandText" placeholder="Enter the text to convert to speech..." required></textarea>
                 </div>
                 
-                <div class="form-inline">
-                    <div class="form-group">
-                        <label for="fileName">File Name (without extension):</label>
-                        <input type="text" id="fileName" placeholder="e.g., greeting001" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="channel">Channel (1-12, 0 -  send to all):</label>
-                        <input type="number" id="channel" min="0" max="12" value="1" required>
-                    </div>
-                </div>
-                
                 <div class="form-group">
-                    <label for="time">Time (MM:SS):</label>
-                    <input type="text" id="time" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}" required>
+                    <label for="commandName">Command Name (no spaces):</label>
+                    <input type="text" id="commandName" placeholder="e.g., greeting001" required pattern="[^\s]+">
                 </div>
                 
                 <div class="button-group">
-                    <button type="submit" id="sendBtn">Send</button>
+                    <button type="submit" id="sendBtn">Generate Audio</button>
                     <button type="button" id="listenBtn" class="secondary" disabled>Listen</button>
                 </div>
                 
                 <div id="commandStatus" class="status hidden"></div>
             </form>
+        </section>
+        
+        <!-- Commands Table Section -->
+        <section class="section">
+            <h2>Commands</h2>
+            <button type="button" id="refreshCommandsBtn" class="secondary">Refresh Commands</button>
+            <div id="commandsStatus" class="status hidden"></div>
+            <div class="table-wrapper">
+                <table id="commandsTable">
+                    <thead>
+                        <tr>
+                            <th>Command Name</th>
+                            <th>File Name</th>
+                            <th>Text</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commandsBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #999;">Loading commands...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
         
         <!-- Events Table Section -->
@@ -264,14 +276,13 @@
                         <tr>
                             <th>Time</th>
                             <th>Channel</th>
-                            <th>File Name</th>
-                            <th>Text</th>
+                            <th>Command Name</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="eventsBody">
                         <tr>
-                            <td colspan="5" style="text-align: center; color: #999;">Loading events...</td>
+                            <td colspan="4" style="text-align: center; color: #999;">Loading events...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -319,22 +330,15 @@
         connectWebSocket();
         
         // Form submission handler
-        document.getElementById('commandForm').addEventListener('submit', (e) => {
+        document.getElementById('commandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const text = document.getElementById('commandText').value.trim();
-            let fileName = document.getElementById('fileName').value.trim();
-            const channel = document.getElementById('channel').value;
-            let time = document.getElementById('time').value.trim();
+            let commandName = document.getElementById('commandName').value.trim();
             
-            // Validate and fix filename (replace spaces with underscores)
-            fileName = fileName.replace(/\s+/g, '_');
-            document.getElementById('fileName').value = fileName;
-            
-            // Validate time format (MM:SS)
-            const timePattern = /^[0-9]{2}:[0-9]{2}$/;
-            if (!timePattern.test(time)) {
-                showStatus('commandStatus', 'Invalid time format. Please use MM:SS (e.g., 05:30)', 'error');
+            // Validate command name (no spaces)
+            if (/\s/.test(commandName)) {
+                showStatus('commandStatus', 'Command name cannot contain spaces', 'error');
                 return;
             }
             
@@ -343,33 +347,84 @@
                 return;
             }
             
-            // Format message: "generate | text | filename | channel | time"
-            const message = `generate | ${text} | ${fileName} | ${channel} | ${time}`;
+            // Format message: "generateCommand | text | commandName"
+            const message = `generateCommand | ${text} | ${commandName}`;
             
             try {
                 ws.send(message);
-                lastGeneratedFile = { fileName, channel };
-                showStatus('commandStatus', 'Command sent successfully! File will be available at: audio/audiofiles/' + fileName + '.mp3', 'success');
+                lastGeneratedFile = commandName;
+                showStatus('commandStatus', 'Generating audio for command "' + commandName + '"...', 'info');
                 
-                // Enable listen button after a delay to allow file generation
-                setTimeout(() => {
+                // Wait for file generation and update solaris.json
+                setTimeout(async () => {
+                    await updateCommandInJSON(commandName, text);
                     document.getElementById('listenBtn').disabled = false;
-                }, 5000);
-                
-                // Refresh events table after a short delay
-                setTimeout(() => {
+                    showStatus('commandStatus', 'Command "' + commandName + '" saved successfully!', 'success');
+                    // Refresh events table
                     loadEvents();
-                }, 2000);
+                }, 5000);
             } catch (error) {
                 showStatus('commandStatus', 'Failed to send command: ' + error.message, 'error');
             }
         });
         
+        // Function to update command in solaris.json
+        async function updateCommandInJSON(commandName, text) {
+            try {
+                // Load current solaris.json
+                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                let data;
+                
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    // If file doesn't exist, create new structure
+                    data = { commands: [], events: [] };
+                }
+                
+                // Check if command already exists
+                const existingIndex = data.commands.findIndex(cmd => cmd.name === commandName);
+                const fileName = commandName + '.mp3';
+                
+                if (existingIndex !== -1) {
+                    // Replace existing command
+                    data.commands[existingIndex] = {
+                        name: commandName,
+                        fileName: fileName,
+                        text: text
+                    };
+                } else {
+                    // Add new command
+                    data.commands.push({
+                        name: commandName,
+                        fileName: fileName,
+                        text: text
+                    });
+                }
+                
+                // Note: In a real implementation, we would send this to the server to write
+                // For now, we'll just log it (the server would need to handle this)
+                console.log('Updated solaris.json:', JSON.stringify(data, null, 2));
+                
+                // Send update to server
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('updateJSON | ' + JSON.stringify(data));
+                }
+            } catch (error) {
+                console.error('Error updating solaris.json:', error);
+            }
+        }
+        
         // Listen button handler
         document.getElementById('listenBtn').addEventListener('click', () => {
             if (lastGeneratedFile) {
-                playAudioFile(lastGeneratedFile.channel, lastGeneratedFile.fileName);
+                playAudioFile('audiofiles', lastGeneratedFile);
             }
+        });
+        
+        // Refresh commands button handler
+        document.getElementById('refreshCommandsBtn').addEventListener('click', () => {
+            loadCommands();
         });
         
         // Refresh button handler
@@ -386,6 +441,47 @@
             } 
         });
         
+        // Function to load commands from solaris.json
+        async function loadCommands() {
+            try {
+                showStatus('commandsStatus', 'Loading commands...', 'info');
+                
+                const response = await fetch(`../solaris.json?nocache=${Date.now()}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load solaris.json: ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                const tbody = document.getElementById('commandsBody');
+                tbody.innerHTML = '';
+                
+                if (!data.commands || data.commands.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No commands found</td></tr>';
+                    showStatus('commandsStatus', 'No commands found in solaris.json', 'info');
+                    return;
+                }
+                
+                // Display each command
+                data.commands.forEach(command => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${escapeHtml(command.name)}</td>
+                        <td>${escapeHtml(command.fileName)}</td>
+                        <td>${escapeHtml(command.text)}</td>
+                        <td><button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(command.name)}')">Play</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                showStatus('commandsStatus', `Loaded ${data.commands.length} command(s) successfully`, 'success');
+            } catch (error) {
+                console.error('Error loading commands:', error);
+                document.getElementById('commandsBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff8a8a;">Error loading commands: ' + escapeHtml(error.message) + '</td></tr>';
+                showStatus('commandsStatus', 'Error loading commands: ' + error.message, 'error');
+            }
+        }
+        
         // Function to show status messages
         function showStatus(elementId, message, type) {
             const statusEl = document.getElementById(elementId);
@@ -401,65 +497,54 @@
             }
         }
         
-        // Function to load events from events.txt
+        // Function to load events from solaris.json
         async function loadEvents() {
             try {
                 showStatus('eventsStatus', 'Loading events...', 'info');
                 
-                // Fetch events.txt,  from parent directory (relative to client folder, force to reload)
-                const response = await fetch(`../events.txt?nocache=${Date.now()}`);
+                const response = await fetch(`../solaris.json?nocache=${Date.now()}`);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load events.txt: ' + response.statusText);
+                    throw new Error('Failed to load solaris.json: ' + response.statusText);
                 }
                 
-                const text = await response.text();
-                const lines = text.trim().split('\n').filter(line => line.trim());
-                console.log("Lines read: ", lines)
-                
+                const data = await response.json();
                 const tbody = document.getElementById('eventsBody');
                 tbody.innerHTML = '';
                 
-                if (lines.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No events found</td></tr>';
-                    showStatus('eventsStatus', 'No events found in events.txt', 'info');
+                if (!data.events || data.events.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No events found</td></tr>';
+                    showStatus('eventsStatus', 'No events found in solaris.json', 'info');
                     return;
                 }
                 
-                // Parse each line: Time|Channel|FileName|Text
-                lines.forEach(line => {
-                    const parts = line.split('|');
-                    if (parts.length >= 4) {
-                        const [time, channel, fileName, ...textParts] = parts;
-                        const text = textParts.join('|'); // Rejoin in case text contains |
-                        
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${escapeHtml(time)}</td>
-                            <td>${escapeHtml(channel)}</td>
-                            <td>${escapeHtml(fileName)}</td>
-                            <td>${escapeHtml(text)}</td>
-                            <td><button class="play-btn" onclick="playAudioFromRow('${escapeHtml(channel)}', '${escapeHtml(fileName.replace('.mp3', ''))}')">Play</button></td>
-                        `;
-                        tbody.appendChild(row);
-                    }
+                // Display each event
+                data.events.forEach(event => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${escapeHtml(String(event.time))}</td>
+                        <td>${escapeHtml(event.channel)}</td>
+                        <td>${escapeHtml(event.name)}</td>
+                        <td><button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(event.name)}')">Play</button></td>
+                    `;
+                    tbody.appendChild(row);
                 });
                 
-                showStatus('eventsStatus', `Loaded ${lines.length} event(s) successfully`, 'success');
+                showStatus('eventsStatus', `Loaded ${data.events.length} event(s) successfully`, 'success');
             } catch (error) {
                 console.error('Error loading events:', error);
-                document.getElementById('eventsBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ff8a8a;">Error loading events: ' + escapeHtml(error.message) + '</td></tr>';
+                document.getElementById('eventsBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff8a8a;">Error loading events: ' + escapeHtml(error.message) + '</td></tr>';
                 showStatus('eventsStatus', 'Error loading events: ' + error.message, 'error');
             }
         }
         
         // Function to play audio file
-        function playAudioFile(channel, fileName) {
+        function playAudioFile(directory, fileName) {
             // Remove .mp3 extension if present
             fileName = fileName.replace('.mp3', '');
             
-            // Construct path: ../audio/channel/fileName.mp3
-            const audioPath = `../audio/audiofiles/${fileName}.mp3`;
+            // Construct path: ../audio/directory/fileName.mp3
+            const audioPath = `../audio/${directory}/${fileName}.mp3`;
             
             console.log('Playing audio:', audioPath);
             
@@ -476,10 +561,8 @@
             });
         }
         
-        // Global function for play buttons in table
-        window.playAudioFromRow = function(channel, fileName) {
-            playAudioFile(channel, fileName);
-        };
+        // Make playAudioFile global for inline onclick handlers
+        window.playAudioFile = playAudioFile;
         
         // Helper function to escape HTML
         function escapeHtml(text) {
@@ -488,7 +571,8 @@
             return div.innerHTML;
         }
         
-        // Load events on page load
+        // Load commands and events on page load
+        loadCommands();
         loadEvents();
     </script>
 </body>
