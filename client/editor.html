@@ -208,6 +208,110 @@
         .hidden {
             display: none;
         }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow: auto;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3a3a3a;
+            padding-bottom: 10px;
+        }
+        
+        .modal-header h3 {
+            color: #4a9eff;
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            color: #fff;
+        }
+        
+        .delete-btn {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            background: #d32f2f;
+        }
+        
+        .delete-btn:hover:not(:disabled) {
+            background: #b71c1c;
+        }
+        
+        .edit-btn {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            background: #f57c00;
+        }
+        
+        .edit-btn:hover:not(:disabled) {
+            background: #e65100;
+        }
+        
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        th.sortable:hover {
+            background: #4a4a4a;
+        }
+        
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+        }
+        
+        th.sortable.sorted-asc::after {
+            content: ' ▲';
+            opacity: 1;
+        }
+        
+        th.sortable.sorted-desc::after {
+            content: ' ▼';
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -264,6 +368,37 @@
             </div>
         </section>
         
+        <!-- New Event Section -->
+        <section class="section">
+            <h2>New Event</h2>
+            <form id="eventForm">
+                <div class="form-inline">
+                    <div class="form-group">
+                        <label for="eventTime">Time (MM:SS):</label>
+                        <input type="text" id="eventTime" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventChannel">Channel (1-12, 0 - send to all):</label>
+                        <input type="number" id="eventChannel" min="0" max="12" value="1" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventCommand">Command Name:</label>
+                    <select id="eventCommand" required>
+                        <option value="">Select a command...</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" id="addEventBtn">Add Event</button>
+                </div>
+                
+                <div id="eventStatus" class="status hidden"></div>
+            </form>
+        </section>
+        
         <!-- Events Table Section -->
         <section class="section">
             <h2>Events</h2>
@@ -274,10 +409,10 @@
                 <table id="eventsTable">
                     <thead>
                         <tr>
-                            <th>Time</th>
-                            <th>Channel</th>
+                            <th class="sortable" data-column="time">Time</th>
+                            <th class="sortable" data-column="channel">Channel</th>
                             <th>Command Name</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="eventsBody">
@@ -288,6 +423,42 @@
                 </table>
             </div>
         </section>
+    </div>
+    
+    <!-- Edit Event Modal -->
+    <div id="editEventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Event</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editEventForm">
+                <input type="hidden" id="editEventIndex">
+                <div class="form-inline">
+                    <div class="form-group">
+                        <label for="editEventTime">Time (MM:SS):</label>
+                        <input type="text" id="editEventTime" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editEventChannel">Channel (1-12, 0 - send to all):</label>
+                        <input type="number" id="editEventChannel" min="0" max="12" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEventCommand">Command Name:</label>
+                    <select id="editEventCommand" required>
+                        <option value="">Select a command...</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit">Save Changes</button>
+                    <button type="button" class="secondary" onclick="closeEditModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
     
     <script>
@@ -441,6 +612,113 @@
             } 
         });
         
+        // New Event form submission handler
+        document.getElementById('eventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const time = document.getElementById('eventTime').value.trim();
+            const channel = document.getElementById('eventChannel').value;
+            const commandName = document.getElementById('eventCommand').value;
+            
+            // Validate time format (MM:SS)
+            const timePattern = /^[0-9]{2}:[0-9]{2}$/;
+            if (!timePattern.test(time)) {
+                showStatus('eventStatus', 'Invalid time format. Please use MM:SS (e.g., 05:30)', 'error');
+                return;
+            }
+            
+            if (!commandName) {
+                showStatus('eventStatus', 'Please select a command', 'error');
+                return;
+            }
+            
+            try {
+                // Load current data
+                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                let data;
+                
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    data = { commands: [], events: [] };
+                }
+                
+                // Convert time to seconds
+                const [minutes, seconds] = time.split(':').map(Number);
+                const timeInSeconds = minutes * 60 + seconds;
+                
+                // Add new event
+                data.events.push({
+                    time: timeInSeconds,
+                    channel: channel,
+                    name: commandName
+                });
+                
+                // Send to server
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('updateJSON | ' + JSON.stringify(data));
+                    showStatus('eventStatus', 'Event added successfully!', 'success');
+                    
+                    // Clear form
+                    document.getElementById('eventTime').value = '';
+                    document.getElementById('eventChannel').value = '1';
+                    document.getElementById('eventCommand').value = '';
+                    
+                    // Refresh events table
+                    setTimeout(() => {
+                        loadEvents();
+                    }, 500);
+                } else {
+                    showStatus('eventStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('eventStatus', 'Failed to add event: ' + error.message, 'error');
+            }
+        });
+        
+        // Edit Event form submission handler
+        document.getElementById('editEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const index = parseInt(document.getElementById('editEventIndex').value);
+            const time = document.getElementById('editEventTime').value.trim();
+            const channel = document.getElementById('editEventChannel').value;
+            const commandName = document.getElementById('editEventCommand').value;
+            
+            try {
+                // Load current data
+                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                let data = await response.json();
+                
+                // Convert time to seconds
+                const [minutes, seconds] = time.split(':').map(Number);
+                const timeInSeconds = minutes * 60 + seconds;
+                
+                // Update event
+                data.events[index] = {
+                    time: timeInSeconds,
+                    channel: channel,
+                    name: commandName
+                };
+                
+                // Send to server
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('updateJSON | ' + JSON.stringify(data));
+                    closeEditModal();
+                    showStatus('eventsStatus', 'Event updated successfully!', 'success');
+                    
+                    // Refresh events table
+                    setTimeout(() => {
+                        loadEvents();
+                    }, 500);
+                } else {
+                    showStatus('eventsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('eventsStatus', 'Failed to update event: ' + error.message, 'error');
+            }
+        });
+        
         // Function to load commands from solaris.json
         async function loadCommands() {
             try {
@@ -474,6 +752,25 @@
                     tbody.appendChild(row);
                 });
                 
+                // Populate command dropdowns
+                const eventCommandSelect = document.getElementById('eventCommand');
+                const editEventCommandSelect = document.getElementById('editEventCommand');
+                
+                eventCommandSelect.innerHTML = '<option value="">Select a command...</option>';
+                editEventCommandSelect.innerHTML = '<option value="">Select a command...</option>';
+                
+                data.commands.forEach(command => {
+                    const option1 = document.createElement('option');
+                    option1.value = command.name;
+                    option1.textContent = command.name;
+                    eventCommandSelect.appendChild(option1);
+                    
+                    const option2 = document.createElement('option');
+                    option2.value = command.name;
+                    option2.textContent = command.name;
+                    editEventCommandSelect.appendChild(option2);
+                });
+                
                 showStatus('commandsStatus', `Loaded ${data.commands.length} command(s) successfully`, 'success');
             } catch (error) {
                 console.error('Error loading commands:', error);
@@ -497,6 +794,10 @@
             }
         }
         
+        // Global events array for sorting
+        let eventsData = [];
+        let currentSort = { column: null, direction: 'asc' };
+        
         // Function to load events from solaris.json
         async function loadEvents() {
             try {
@@ -509,34 +810,157 @@
                 }
                 
                 const data = await response.json();
-                const tbody = document.getElementById('eventsBody');
-                tbody.innerHTML = '';
+                eventsData = data.events || [];
                 
-                if (!data.events || data.events.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No events found</td></tr>';
-                    showStatus('eventsStatus', 'No events found in solaris.json', 'info');
-                    return;
-                }
+                displayEvents();
                 
-                // Display each event
-                data.events.forEach(event => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${escapeHtml(String(event.time))}</td>
-                        <td>${escapeHtml(event.channel)}</td>
-                        <td>${escapeHtml(event.name)}</td>
-                        <td><button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(event.name)}')">Play</button></td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                showStatus('eventsStatus', `Loaded ${data.events.length} event(s) successfully`, 'success');
+                showStatus('eventsStatus', `Loaded ${eventsData.length} event(s) successfully`, 'success');
             } catch (error) {
                 console.error('Error loading events:', error);
-                document.getElementById('eventsBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff8a8a;">Error loading events: ' + escapeHtml(error.message) + '</td></tr>';
+                document.getElementById('eventsBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ff8a8a;">Error loading events: ' + escapeHtml(error.message) + '</td></tr>';
                 showStatus('eventsStatus', 'Error loading events: ' + error.message, 'error');
             }
         }
+        
+        // Function to display events
+        function displayEvents() {
+            const tbody = document.getElementById('eventsBody');
+            tbody.innerHTML = '';
+            
+            if (eventsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No events found</td></tr>';
+                return;
+            }
+            
+            // Display each event
+            eventsData.forEach((event, index) => {
+                // Convert time to MM:SS format
+                const minutes = Math.floor(event.time / 60);
+                const seconds = event.time % 60;
+                const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(timeStr)}</td>
+                    <td>${escapeHtml(event.channel)}</td>
+                    <td>${escapeHtml(event.name)}</td>
+                    <td>
+                        <button class="play-btn" onclick="playAudioFile('audiofiles', '${escapeHtml(event.name)}')">Play</button>
+                        <button class="edit-btn" onclick="editEvent(${index})">Edit</button>
+                        <button class="delete-btn" onclick="deleteEvent(${index})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Function to sort events
+        function sortEvents(column) {
+            // Update sort direction
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Sort the events array
+            eventsData.sort((a, b) => {
+                let valA, valB;
+                
+                if (column === 'time') {
+                    valA = a.time;
+                    valB = b.time;
+                } else if (column === 'channel') {
+                    valA = parseInt(a.channel);
+                    valB = parseInt(b.channel);
+                }
+                
+                if (currentSort.direction === 'asc') {
+                    return valA - valB;
+                } else {
+                    return valB - valA;
+                }
+            });
+            
+            // Update table headers
+            document.querySelectorAll('#eventsTable th.sortable').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.column === column) {
+                    th.classList.add('sorted-' + currentSort.direction);
+                }
+            });
+            
+            // Re-display events
+            displayEvents();
+        }
+        
+        // Add event listeners for sortable columns
+        document.querySelectorAll('#eventsTable th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                sortEvents(th.dataset.column);
+            });
+        });
+        
+        // Function to edit event
+        async function editEvent(index) {
+            const event = eventsData[index];
+            
+            // Convert time to MM:SS format
+            const minutes = Math.floor(event.time / 60);
+            const seconds = event.time % 60;
+            const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Populate form
+            document.getElementById('editEventIndex').value = index;
+            document.getElementById('editEventTime').value = timeStr;
+            document.getElementById('editEventChannel').value = event.channel;
+            document.getElementById('editEventCommand').value = event.name;
+            
+            // Show modal
+            document.getElementById('editEventModal').classList.add('show');
+        }
+        
+        // Function to close edit modal
+        function closeEditModal() {
+            document.getElementById('editEventModal').classList.remove('show');
+        }
+        
+        // Function to delete event
+        async function deleteEvent(index) {
+            if (!confirm('Are you sure you want to delete this event?')) {
+                return;
+            }
+            
+            try {
+                // Load current data
+                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                let data = await response.json();
+                
+                // Remove event
+                data.events.splice(index, 1);
+                
+                // Send to server
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('updateJSON | ' + JSON.stringify(data));
+                    showStatus('eventsStatus', 'Event deleted successfully!', 'success');
+                    
+                    // Refresh events table
+                    setTimeout(() => {
+                        loadEvents();
+                    }, 500);
+                } else {
+                    showStatus('eventsStatus', 'Not connected to server', 'error');
+                }
+            } catch (error) {
+                showStatus('eventsStatus', 'Failed to delete event: ' + error.message, 'error');
+            }
+        }
+        
+        // Make functions global for onclick handlers
+        window.editEvent = editEvent;
+        window.closeEditModal = closeEditModal;
+        window.deleteEvent = deleteEvent;
         
         // Function to play audio file
         function playAudioFile(directory, fileName) {
