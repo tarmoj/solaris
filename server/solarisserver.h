@@ -1,5 +1,3 @@
-// Copyright (C) 2016 Kurt Pattyn <pattyn.kurt@gmail.com>.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 #ifndef SOLARISSERVER_H
 #define SOLARISSERVER_H
 

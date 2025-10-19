@@ -6,25 +6,33 @@
             "text": "Test. Test. Test."
         },
         {
-            "fileName": "greeting.mp3",
-            "name": "greeting",
-            "text": "Welcome to Solaris!"
-        },
-        {
-            "fileName": "playLoud.mp3",
-            "name": "playLoud",
-            "text": "Mängi valjult!"
+            "fileName": "kiireTremolo.mp3",
+            "name": "kiireTremolo",
+            "text": "Kiire tremolo."
         }
     ],
     "events": [
         {
-            "channels": ["1"],
+            "channels": [
+                "0"
+            ],
             "name": "test",
             "time": 0
         },
         {
-            "channels": ["1", "2", "3"],
-            "name": "playLoud",
+            "channels": [
+                "1",
+                "2",
+                "3"
+            ],
+            "name": "kiireTremolo",
+            "time": 15
+        },
+        {
+            "channels": [
+                "1"
+            ],
+            "name": "kiireTremolo",
             "time": 20
         }
     ]

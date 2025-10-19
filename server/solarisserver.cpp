@@ -156,6 +156,15 @@ void SolarisServer::processTextMessage(QString message)
 
 
     if (command=="start") {
+        if (messageParts.count()>=2) {
+            bool ok;
+            int time = messageParts[1].toInt(&ok);
+            if (ok) {
+                counter = time;
+                qDebug()<< "Set time to: " << time;
+            }
+        }
+
         timer.start();
     }
     if (command=="stop") {
@@ -165,9 +174,9 @@ void SolarisServer::processTextMessage(QString message)
     if (command=="test") {
         sendTest();
     }
-    if (command=="seek" && messageParts.count()>2) {
+    if (command=="seek" && messageParts.count()>=2) {
         bool ok;
-        int time = messageParts[2].toInt(&ok);
+        int time = messageParts[1].toInt(&ok);
         if (ok) {
             counter = time;
             qDebug()<< "Set time to: " << time;
