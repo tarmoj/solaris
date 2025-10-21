@@ -217,6 +217,32 @@
             font-style: italic;
         }
         
+        /* Time display */
+        .time-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(42, 42, 42, 0.95);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 2px solid #4a9eff;
+            z-index: 10000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .time-display .time-label {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .time-display .time-value {
+            font-size: 2em;
+            color: #4a9eff;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        
         /* Lock overlay */
         .lock-overlay {
             position: fixed;
@@ -271,6 +297,12 @@
     </style>
 </head>
 <body>
+    <!-- Time Display (always visible, even on locked screen) -->
+    <div class="time-display">
+        <div class="time-label">Current Time</div>
+        <div class="time-value" id="timeDisplay">00:00</div>
+    </div>
+    
     <!-- Lock Overlay -->
     <div class="lock-overlay" id="lockOverlay">
         <div class="lock-message">
@@ -398,7 +430,17 @@
         
         // Handle incoming WebSocket message
         function handleMessage(message) {
-            // Expected format: 'play|fileName|text'
+            // Check for time message format: 'time|seconds'
+            if (message.startsWith('time|')) {
+                const timeInSeconds = parseInt(message.split('|')[1]);
+                const minutes = Math.floor(timeInSeconds / 60);
+                const seconds = timeInSeconds % 60;
+                const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                document.getElementById('timeDisplay').textContent = timeStr;
+                return;
+            }
+            
+            // Expected format: 'play|channel|fileName|text'
             const parts = message.split('|');
             
             if (parts.length >= 4 && parts[0].trim().toLowerCase() === 'play') {
