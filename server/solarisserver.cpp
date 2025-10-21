@@ -9,6 +9,9 @@
 #include <QtCore/QDir>
 #include <QtCore/QTextStream>
 #include <QtCore/QStringList>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonArray>
 #include <QtNetwork/QSslCertificate>
 #include <QtNetwork/QSslKey>
 #include <algorithm>
@@ -63,8 +66,10 @@ SolarisServer::SolarisServer(quint16 port, QObject *parent) :
         QDir audioDirObj(audioDir);
         audioDirObj.cdUp();  // Go to parent directory
         eventsFile = audioDirObj.absolutePath() + "/events.txt";
+        solarisJSONFile = audioDirObj.absolutePath() + "/solaris.json";
 
         loadEntries();
+        loadSolarisJSON();
 
     }
 }
@@ -151,6 +156,15 @@ void SolarisServer::processTextMessage(QString message)
 
 
     if (command=="start") {
+        if (messageParts.count()>=2) {
+            bool ok;
+            int time = messageParts[1].toInt(&ok);
+            if (ok) {
+                counter = time;
+                qDebug()<< "Set time to: " << time;
+            }
+        }
+
         timer.start();
     }
     if (command=="stop") {
@@ -160,9 +174,9 @@ void SolarisServer::processTextMessage(QString message)
     if (command=="test") {
         sendTest();
     }
-    if (command=="seek" && messageParts.count()>2) {
+    if (command=="seek" && messageParts.count()>=2) {
         bool ok;
-        int time = messageParts[2].toInt(&ok);
+        int time = messageParts[1].toInt(&ok);
         if (ok) {
             counter = time;
             qDebug()<< "Set time to: " << time;
@@ -249,6 +263,114 @@ void SolarisServer::processTextMessage(QString message)
             }
         } else {
             qWarning() << "Invalid generate message format. Expected 5 messageParts, got:" << messageParts.size();
+        }
+    } else if (command == "generateCommand") {
+        // New format: "generateCommand | text | commandName"
+        // Trim whitespace from each part
+        for (int i = 0; i < messageParts.size(); ++i) {
+            messageParts[i] = messageParts[i].trimmed();
+        }
+        
+        if (messageParts.size() >= 3) {
+            QString text = messageParts[1];
+            QString commandName = messageParts[2];
+            
+            qDebug() << "Processing command generation - text:" << text << "commandName:" << commandName;
+            
+            // Path to the generator script
+            QString generatorScript = audioDir + "/generator.py";
+            
+            // Path to the API key script
+            QString apiKeyScript = audioDir + "/elevenlabs-api-key.sh";
+            
+            // Create the command to source the API key and run the generator
+            auto bashEscape = [](const QString &str) -> QString {
+                QString escaped = str;
+                escaped.replace("'", "'\\''");  // Replace ' with '\''
+                return "'" + escaped + "'";
+            };
+            
+            // Use "audiofiles" as the channel/directory
+            QString bashCommand = QString("source %1 && python3 %2 %3 %4 %5")
+                .arg(apiKeyScript)
+                .arg(generatorScript)
+                .arg(bashEscape(text))
+                .arg(bashEscape("audiofiles"))
+                .arg(bashEscape(commandName));
+            
+            qDebug() << "Executing bash command:" << bashCommand;
+            
+            // Execute the command
+            QProcess process;
+            QStringList arguments;
+            arguments << "-c" << bashCommand;
+            process.start("bash", arguments);
+            
+            // Wait for the process to finish (with timeout)
+            if (process.waitForFinished(30000)) { // 30 second timeout
+                int exitCode = process.exitCode();
+                QString output = process.readAllStandardOutput();
+                QString errors = process.readAllStandardError();
+                
+                qDebug() << "Process output:" << output;
+                if (!errors.isEmpty()) {
+                    qDebug() << "Process errors:" << errors;
+                }
+                
+                if (exitCode == 0) {
+                    // Update solaris.json
+                    QJsonArray commands = solarisData["commands"].toArray();
+                    
+                    // Check if command already exists
+                    int existingIndex = -1;
+                    for (int i = 0; i < commands.size(); ++i) {
+                        QJsonObject cmd = commands[i].toObject();
+                        if (cmd["name"].toString() == commandName) {
+                            existingIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    // Create command object
+                    QJsonObject commandObj;
+                    commandObj["name"] = commandName;
+                    commandObj["fileName"] = commandName + ".mp3";
+                    commandObj["text"] = text;
+                    
+                    if (existingIndex != -1) {
+                        // Replace existing command
+                        commands[existingIndex] = commandObj;
+                        qDebug() << "Replaced existing command:" << commandName;
+                    } else {
+                        // Add new command
+                        commands.append(commandObj);
+                        qDebug() << "Added new command:" << commandName;
+                    }
+                    
+                    solarisData["commands"] = commands;
+                    saveSolarisJSON();
+                } else {
+                    qWarning() << "Generator script failed with exit code:" << exitCode;
+                }
+            } else {
+                qWarning() << "Generator script timed out or failed to start";
+            }
+        } else {
+            qWarning() << "Invalid generateCommand message format. Expected 3 parts, got:" << messageParts.size();
+        }
+    } else if (command == "updateJSON") {
+        // Format: "updateJSON | <json_string>"
+        if (messageParts.size() >= 2) {
+            QString jsonString = message.section('|', 1).trimmed();
+            QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
+            
+            if (!doc.isNull() && doc.isObject()) {
+                solarisData = doc.object();
+                saveSolarisJSON();
+                qDebug() << "Updated solaris.json from client";
+            } else {
+                qWarning() << "Invalid JSON data received for updateJSON";
+            }
         }
     } else if (messageParts[0] == "sendCommand") { // send  command to all connected clients
 
@@ -350,6 +472,46 @@ void SolarisServer::sortAndSaveEntries()
     }
 }
 
+void SolarisServer::loadSolarisJSON()
+{
+    QFile file(solarisJSONFile);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QByteArray data = file.readAll();
+        file.close();
+        
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        if (!doc.isNull() && doc.isObject()) {
+            solarisData = doc.object();
+            qDebug() << "Successfully loaded solaris.json";
+        } else {
+            qWarning() << "Failed to parse solaris.json";
+            // Initialize with empty structure
+            solarisData = QJsonObject();
+            solarisData["commands"] = QJsonArray();
+            solarisData["events"] = QJsonArray();
+        }
+    } else {
+        qDebug() << "solaris.json not found, creating new structure";
+        // Initialize with empty structure
+        solarisData = QJsonObject();
+        solarisData["commands"] = QJsonArray();
+        solarisData["events"] = QJsonArray();
+    }
+}
+
+void SolarisServer::saveSolarisJSON()
+{
+    QFile file(solarisJSONFile);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QJsonDocument doc(solarisData);
+        file.write(doc.toJson(QJsonDocument::Indented));
+        file.close();
+        qDebug() << "Successfully saved solaris.json";
+    } else {
+        qWarning() << "Failed to open solaris.json for writing:" << solarisJSONFile;
+    }
+}
+
 
 
 void SolarisServer::counterChanged() // timer timeOut slot
@@ -363,22 +525,53 @@ void SolarisServer::counterChanged() // timer timeOut slot
         counter = START_FROM;
     }
 
-    for (QString const &entry: entries) { // TODO: better keep entries as array of struct/object, not string, avoid split
-        QStringList parts = entry.split("|");
-        if (parts.count()>0) {
-            QStringList timeParts = parts[0].trimmed().split(":"); // <- stupid code!!! rewrite to struct! this is just for testing!
-            int minutes = timeParts[0].toInt();
-            int seconds = timeParts[1].toInt();
-            int time = minutes*60 + seconds;
-            if (counter==1) {
-                qDebug() << "counterChanged: " << parts[0] << minutes << seconds ;
+    // Use JSON events from solaris.json
+    QJsonArray events = solarisData["events"].toArray();
+    QJsonArray commands = solarisData["commands"].toArray();
+    
+    for (const QJsonValue &eventValue : events) {
+        QJsonObject event = eventValue.toObject();
+        int eventTime = event["time"].toInt();
+        
+        if (eventTime == counter) {
+            QString commandName = event["name"].toString();
+            
+            // Handle both "channels" array and old "channel" string format
+            QStringList channelsList;
+            if (event.contains("channels") && event["channels"].isArray()) {
+                QJsonArray channelsArray = event["channels"].toArray();
+                for (const QJsonValue &chValue : channelsArray) {
+                    channelsList.append(chValue.toString());
+                }
+            } else if (event.contains("channel")) {
+                channelsList.append(event["channel"].toString());
             }
-            if (time == counter) {
-                // stored as:  QString("%1|%2|%3.mp3|%4").arg(time).arg(channel).arg(filename).arg(text);
-                sendToAll(QString("play|%1|%2|%3").arg(parts[1]).arg(parts[2]).arg(parts[3]));  // play|time|channel|fileName|text
+            
+            // Find the command to get the text and filename
+            QString text = "";
+            QString fileName = commandName + ".mp3";
+            
+            for (const QJsonValue &cmdValue : commands) {
+                QJsonObject cmd = cmdValue.toObject();
+                if (cmd["name"].toString() == commandName) {
+                    text = cmd["text"].toString();
+                    fileName = cmd["fileName"].toString();
+                    break;
+                }
+            }
+            
+            // Send play command to each channel (unless channel is "0" which means send to all)
+            for (const QString &channel : channelsList) {
+                if (channel == "0") {
+                    // Send to all channels
+                    sendToAll(QString("play|0|%1|%2").arg(fileName).arg(text));
+                    break; // No need to send to other channels if we're sending to all
+                } else {
+                    // Send to specific channel
+                    sendToAll(QString("play|%1|%2|%3").arg(channel).arg(fileName).arg(text));
+                }
             }
         }
-
     }
 
     sendToAll("time|" + QString::number(counter)); // or rather send as a string 00:00

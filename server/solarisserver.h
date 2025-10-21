@@ -1,5 +1,3 @@
-// Copyright (C) 2016 Kurt Pattyn <pattyn.kurt@gmail.com>.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 #ifndef SOLARISSERVER_H
 #define SOLARISSERVER_H
 
@@ -11,6 +9,7 @@
 #include <QtNetwork/QSslKey>
 #include <QSslConfiguration>
 #include <QTimer>
+#include <QJsonObject>
 
 QT_FORWARD_DECLARE_CLASS(QWebSocketServer)
 QT_FORWARD_DECLARE_CLASS(QWebSocket)
@@ -26,6 +25,9 @@ public:
 
     void loadEntries();
     void sortAndSaveEntries();
+    
+    void loadSolarisJSON();
+    void saveSolarisJSON();
 
     void sendToAll(QString message);
     void sendTest();
@@ -52,6 +54,8 @@ private:
     QString audioDir;
     QStringList entries;
     QString eventsFile;
+    QString solarisJSONFile;
+    QJsonObject solarisData;
 
 };
 

@@ -1,0 +1,39 @@
+{
+    "commands": [
+        {
+            "fileName": "test.mp3",
+            "name": "test",
+            "text": "Test. Test. Test."
+        },
+        {
+            "fileName": "kiireTremolo.mp3",
+            "name": "kiireTremolo",
+            "text": "Kiire tremolo."
+        }
+    ],
+    "events": [
+        {
+            "channels": [
+                "0"
+            ],
+            "name": "test",
+            "time": 0
+        },
+        {
+            "channels": [
+                "1",
+                "2",
+                "3"
+            ],
+            "name": "kiireTremolo",
+            "time": 15
+        },
+        {
+            "channels": [
+                "1"
+            ],
+            "name": "kiireTremolo",
+            "time": 20
+        }
+    ]
+}
