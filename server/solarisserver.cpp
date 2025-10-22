@@ -145,6 +145,10 @@ void SolarisServer::onNewConnection()
     connect(pSocket, &QWebSocket::disconnected, this, &SolarisServer::socketDisconnected);
 
     m_clients << pSocket;
+    
+    // Send current project name to new client
+    QString projectName = getCurrentProjectName();
+    pSocket->sendTextMessage("currentProject|" + projectName);
 }
 
 void SolarisServer::processTextMessage(QString message)
@@ -291,12 +295,15 @@ void SolarisServer::processTextMessage(QString message)
                 return "'" + escaped + "'";
             };
             
-            // Use "audiofiles" as the channel/directory
+            // Get current project name and use it for the directory structure
+            QString projectName = getCurrentProjectName();
+            QString audioSubdir = QString("audiofiles/%1").arg(projectName);
+            
             QString bashCommand = QString("source %1 && python3 %2 %3 %4 %5")
                 .arg(apiKeyScript)
                 .arg(generatorScript)
                 .arg(bashEscape(text))
-                .arg(bashEscape("audiofiles"))
+                .arg(bashEscape(audioSubdir))
                 .arg(bashEscape(commandName));
             
             qDebug() << "Executing bash command:" << bashCommand;
@@ -409,6 +416,10 @@ void SolarisServer::processTextMessage(QString message)
                         pClient->sendTextMessage("projectCreated|" + projectName);
                     }
                     qDebug() << "Created and loaded new project:" << newFileName;
+                    
+                    // Notify all clients of the current project and that data has been updated
+                    sendToAll("currentProject|" + projectName);
+                    sendToAll("dataUpdated");
                 } else {
                     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
                     if (pClient) {
@@ -451,6 +462,11 @@ void SolarisServer::processTextMessage(QString message)
                     pClient->sendTextMessage("projectLoaded|" + fileName);
                 }
                 qDebug() << "Loaded project:" << fullPath;
+                
+                // Notify all clients of the current project and that data has been updated
+                QString projectName = getCurrentProjectName();
+                sendToAll("currentProject|" + projectName);
+                sendToAll("dataUpdated");
             } else {
                 QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
                 if (pClient) {
@@ -635,6 +651,14 @@ void SolarisServer::saveSolarisJSON(const QString &fileName)
     } else {
         qWarning() << "Failed to open for writing:" << fileName;
     }
+}
+
+QString SolarisServer::getCurrentProjectName()
+{
+    // Extract project name from activeJSONFile path (without .json extension)
+    QFileInfo fileInfo(activeJSONFile);
+    QString baseName = fileInfo.baseName();
+    return baseName;
 }
 
 

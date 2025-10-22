@@ -585,6 +585,7 @@
         // WebSocket connection
         let ws = null;
         let lastGeneratedFile = null;
+        let currentProject = 'solaris'; // Default project name
         
         function connectWebSocket() {
             try {
@@ -611,7 +612,11 @@
                     console.log('Received message:', event.data);
                     // Handle time messages
                     const message = event.data;
-                    if (message.startsWith('time|')) {
+                    if (message.startsWith('currentProject|')) {
+                        const projectName = message.split('|')[1];
+                        currentProject = projectName;
+                        console.log('Current project set to:', currentProject);
+                    } else if (message.startsWith('time|')) {
                         const timeInSeconds = parseInt(message.split('|')[1]);
                         const minutes = Math.floor(timeInSeconds / 60);
                         const seconds = timeInSeconds % 60;
@@ -1320,8 +1325,8 @@
             // Remove .mp3 extension if present
             fileName = fileName.replace('.mp3', '');
             
-            // Construct path: ../audio/directory/fileName.mp3
-            const audioPath = `../audio/${directory}/${fileName}.mp3`;
+            // Construct path: ../audio/directory/projectName/fileName.mp3
+            const audioPath = `../audio/${directory}/${currentProject}/${fileName}.mp3`;
             
             console.log('Playing audio:', audioPath);
             

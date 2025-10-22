@@ -30,6 +30,7 @@ public:
     void saveSolarisJSON();
     void loadSolarisJSON(const QString &fileName);
     void saveSolarisJSON(const QString &fileName);
+    QString getCurrentProjectName();
 
     void sendToAll(QString message);
     void sendTest();
