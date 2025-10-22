@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="et">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solaris - Esitaja</title>
-    <script src="../translations/i18n.js"></script>
+    <title>Solaris - Performer</title>
     <style>
         * {
             margin: 0;
@@ -300,51 +299,51 @@
 <body>
     <!-- Time Display (always visible, even on locked screen) -->
     <div class="time-display">
-        <div class="time-label" data-i18n="performer.currentTime">Current Time</div>
+        <div class="time-label">Current Time</div>
         <div class="time-value" id="timeDisplay">00:00</div>
     </div>
     
     <!-- Lock Overlay -->
     <div class="lock-overlay" id="lockOverlay">
         <div class="lock-message">
-            <h2 data-i18n="performer.locked">🔒 LOCKED</h2>
-            <p data-i18n="performer.unlockHint">Triple-click/tap to unlock</p>
+            <h2>🔒 LOCKED</h2>
+            <p>Triple-click/tap to unlock</p>
         </div>
     </div>
     
     <div class="container">
         <div class="header">
-            <h1 data-i18n="performer.title">Solaris - Performer</h1>
-            <a href="../index.html" data-i18n="common.backToMenu">← Back to Main Menu</a>
+            <h1>Solaris - Performer</h1>
+            <a href="../index.html">← Back to Main Menu</a>
         </div>
         
         <!-- Controls Section -->
         <section class="section">
             <div class="controls">
                 <div class="control-group">
-                    <label for="channelInput" data-i18n="performer.channel">Channel (1-12):</label>
+                    <label for="channelInput">Channel (1-12):</label>
                     <input type="number" id="channelInput" min="1" max="12" value="1">
                 </div>
                 
                 <div class="volume-control">
-                    <label for="volumeSlider" data-i18n="performer.volume">Volume:</label>
+                    <label for="volumeSlider">Volume:</label>
                     <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
                     <div class="volume-value" id="volumeValue">80%</div>
                 </div>
                 
-                <button id="enableAudioBtn" data-i18n="performer.enableAudio">Enable Audio</button>
-                <button id="connectBtn" class="hidden" data-i18n="performer.connect">Connect</button>
-                <button id="lockBtn" data-i18n="performer.lockMode">Lock Mode</button>
+                <button id="enableAudioBtn">Enable Audio</button>
+                <button id="connectBtn" class="hidden">Connect</button>
+                <button id="lockBtn">Lock Mode</button>
             </div>
             
-            <div id="statusDisplay" class="status disconnected" data-i18n="performer.connectingToServer">
+            <div id="statusDisplay" class="status disconnected">
                 Connecting to server...
             </div>
         </section>
         
         <!-- Display Area -->
         <div class="display-area">
-            <div id="displayText" class="placeholder-text" data-i18n="performer.waitingForMessages">
+            <div id="displayText" class="placeholder-text">
                 Waiting for messages...
             </div>
         </div>
@@ -371,7 +370,9 @@
         const lockOverlay = document.getElementById('lockOverlay');
         
         let audioContext = null;
+        let gainNode = null;
         let audioEnabled = false;
+        const audioBufferCache = {}; // cache decoded AudioBuffers: key -> AudioBuffer
         
         // Load saved channel from localStorage
         function loadChannel() {
@@ -403,19 +404,19 @@
                 
                 ws.onopen = () => {
                     console.log('WebSocket connected');
-                    updateStatus(window.i18n.t('performer.connectedToServerChannel', { channel: currentChannel }), true);
+                    updateStatus('Connected to server (Channel ' + currentChannel + ')', true);
                     connectBtn.classList.add('hidden');
                 };
                 
                 ws.onclose = () => {
                     console.log('WebSocket disconnected');
-                    updateStatus(window.i18n.t('performer.disconnectedFromServer'), false);
+                    updateStatus('Disconnected from server', false);
                     connectBtn.classList.remove('hidden');
                 };
                 
                 ws.onerror = (error) => {
                     console.error('WebSocket error:', error);
-                    updateStatus(window.i18n.t('performer.connectionError'), false);
+                    updateStatus('Connection error', false);
                 };
                 
                 ws.onmessage = (event) => {
@@ -424,7 +425,7 @@
                 };
             } catch (error) {
                 console.error('Failed to create WebSocket:', error);
-                updateStatus(window.i18n.t('performer.failedToConnect', { error: error.message }), false);
+                updateStatus('Failed to connect: ' + error.message, false);
                 connectBtn.classList.remove('hidden');
             }
         }
@@ -449,7 +450,7 @@
                 const fileName = parts[2].trim();
                 const text = parts[3].trim(); 
                 
-                if (channel===0 || channel===currentChannel) { // chanel 0 means: for everyone
+                if (channel===0 || channel===currentChannel) { // channel 0 means: for everyone
                   // Display the text
                   displayText.textContent = text;
                   displayText.className = 'display-text';
@@ -464,34 +465,70 @@
             }
         }
         
-        // Play audio file
-        function playAudio(fileName) {
-            // Construct path: ../audio/audiofiles/{fileName}.mp3
-            // Remove .mp3 extension if present
+        // Utility: build audio file path from filename
+        function buildAudioPath(fileName) {
             const cleanFileName = fileName.replace('.mp3', '');
-            const audioPath = `../audio/audiofiles/${cleanFileName}.mp3`;
-            
+            return `../audio/audiofiles/${cleanFileName}.mp3`;
+        }
+        
+        // Play audio using WebAudio if available and unlocked; otherwise fallback to HTMLAudio
+        async function playAudio(fileName) {
+            const audioPath = buildAudioPath(fileName);
             console.log('Playing audio:', audioPath);
             
-            const audio = new Audio(audioPath);
-            audio.volume = volumeLevel;
-            
-            audio.play().then(() => {
-                console.log('Playing audio file:', audioPath);
-            }).catch(error => {
-                if (error.name === 'AbortError') {
-                    console.log('Playback ended normally.');
-                } else {
-                    console.error('Playback failed:', error);
-                    alert('Error playing audio file: ' + audioPath + '\n' + error.message);
+            // Prefer WebAudio if audioContext is available and enabled
+            if (audioContext && audioEnabled) {
+                try {
+                    let buffer = audioBufferCache[audioPath];
+                    if (!buffer) {
+                        // Fetch, decode, cache
+                        const res = await fetch(audioPath, {cache: 'no-store'});
+                        if (!res.ok) throw new Error('Network response was not ok: ' + res.status);
+                        const arrayBuffer = await res.arrayBuffer();
+                        buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0)); // slice to ensure transferrable copy
+                        audioBufferCache[audioPath] = buffer;
+                    }
+                    // Create source and play
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(gainNode || audioContext.destination);
+                    
+                    source.onended = () => {
+                        displayText.textContent = 'Waiting for messages...';
+                        displayText.className = 'placeholder-text';
+                    };
+                    
+                    source.start(0);
+                    console.log('WebAudio playback started for', audioPath);
+                    return;
+                } catch (err) {
+                    console.warn('WebAudio playback failed, falling back to HTMLAudio:', err);
+                    // continue to fallback
                 }
-            });
+            }
             
-            // Clear display text after audio ends
-            audio.addEventListener('ended', () => {
-                displayText.textContent = window.i18n.t('performer.waitingForMessages');
-                displayText.className = 'placeholder-text';
-            });
+            // Fallback to HTMLAudio element (attempt to set playsinline for iOS)
+            try {
+                const audio = new Audio(audioPath);
+                audio.playsInline = true; // for iOS Safari
+                audio.setAttribute('playsinline', '');
+                audio.volume = volumeLevel;
+                audio.play().then(() => {
+                    console.log('HTMLAudio playback started for', audioPath);
+                }).catch(error => {
+                    console.error('HTMLAudio playback failed:', error);
+                    // Show helpful message for mobile browsers
+                    alert('Error playing audio file: ' + audioPath + '\n' + (error && error.message ? error.message : String(error)) + '\n\nTip: On iOS you must first tap "Enable Audio" (a direct user gesture) to allow playback. If you already pressed it, please ensure the page was interacted with after enabling audio.');
+                });
+                
+                audio.addEventListener('ended', () => {
+                    displayText.textContent = 'Waiting for messages...';
+                    displayText.className = 'placeholder-text';
+                });
+            } catch (error) {
+                console.error('Playback failed:', error);
+                alert('Error playing audio file: ' + audioPath + '\n' + (error && error.message ? error.message : String(error)));
+            }
         }
         
         // Channel input handler
@@ -500,9 +537,7 @@
             if (value >= 1 && value <= 12) {
                 currentChannel = value;
                 saveChannel();
-                const statusMsg = window.i18n.t('performer.channelChanged', { channel: currentChannel }) + 
-                    (ws && ws.readyState === WebSocket.OPEN ? ' (' + window.i18n.t('common.connected') + ')' : ' (' + window.i18n.t('common.disconnected') + ')');
-                updateStatus(statusMsg, ws && ws.readyState === WebSocket.OPEN);
+                updateStatus('Channel changed to ' + currentChannel + (ws && ws.readyState === WebSocket.OPEN ? ' (Connected)' : ' (Disconnected)'), ws && ws.readyState === WebSocket.OPEN);
             } else {
                 channelInput.value = currentChannel;
             }
@@ -513,20 +548,76 @@
             const value = parseInt(e.target.value);
             volumeLevel = value / 100;
             volumeValue.textContent = value + '%';
+            // If using WebAudio, adjust gain node immediately
+            if (gainNode) {
+                gainNode.gain.setTargetAtTime(volumeLevel, audioContext.currentTime, 0.01);
+            }
         });
         
         // Enable Audio button handler
-        enableAudioBtn.addEventListener('click', () => {
+        enableAudioBtn.addEventListener('click', async () => {
             if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (err) {
+                    console.error('Web Audio API not supported:', err);
+                    audioContext = null;
+                }
             }
-            audioContext.resume().then(() => {
-                audioEnabled = true;
-                enableAudioBtn.textContent = window.i18n.t('performer.audioEnabled');
-                enableAudioBtn.disabled = true;
-                enableAudioBtn.style.background = '#2d5016';
-                console.log('Audio context enabled');
-            });
+            
+            if (audioContext) {
+                try {
+                    // Create gain node if not present
+                    if (!gainNode) {
+                        gainNode = audioContext.createGain();
+                        gainNode.gain.value = volumeLevel;
+                        gainNode.connect(audioContext.destination);
+                    }
+                    
+                    // Resume audio context as a direct user gesture
+                    await audioContext.resume();
+                    audioEnabled = true;
+                    
+                    // Some iOS versions require a sound to be produced on gesture to unlock audio.
+                    // Create a silent buffer and play it immediately to ensure the audio system is unlocked.
+                    try {
+                        const sampleRate = audioContext.sampleRate || 44100;
+                        const buffer = audioContext.createBuffer(1, sampleRate * 0.01, sampleRate); // 10ms silent buffer
+                        const source = audioContext.createBufferSource();
+                        source.buffer = buffer;
+                        source.connect(gainNode);
+                        source.start(0);
+                        source.stop(0);
+                    } catch (unlockErr) {
+                        console.warn('Silent buffer unlock failed:', unlockErr);
+                    }
+                    
+                    enableAudioBtn.textContent = 'Audio Enabled ✓';
+                    enableAudioBtn.disabled = true;
+                    enableAudioBtn.style.background = '#2d5016';
+                    console.log('Audio context enabled');
+                } catch (err) {
+                    console.error('Failed to enable audio context:', err);
+                    alert('Failed to enable Web Audio: ' + (err && err.message ? err.message : String(err)));
+                }
+            } else {
+                // No AudioContext available; try a fallback: create and play a short HTMLAudio in response to gesture
+                try {
+                    const dummy = new Audio();
+                    // Create a tiny silent WAV data URI (1 sample) or use a short base64 silence if available.
+                    // For simplicity, try to play an empty audio element (may still fail).
+                    dummy.volume = 0;
+                    await dummy.play();
+                    audioEnabled = true;
+                    enableAudioBtn.textContent = 'Audio Enabled ✓';
+                    enableAudioBtn.disabled = true;
+                    enableAudioBtn.style.background = '#2d5016';
+                    console.log('Fallback HTMLAudio enabled by user gesture');
+                } catch (err) {
+                    console.error('Fallback audio enable failed:', err);
+                    alert('Unable to enable audio in this browser: ' + (err && err.message ? err.message : String(err)));
+                }
+            }
         });
         
         // Connect button handler
@@ -563,13 +654,9 @@
             e.preventDefault();
         });
         
-        // Initialize translations and then start
-        document.addEventListener('DOMContentLoaded', async () => {
-            await window.i18n.init();
-            // Initialize after translations are ready
-            loadChannel();
-            connectWebSocket();
-        });
+        // Initialize
+        loadChannel();
+        connectWebSocket();
     </script>
 </body>
 </html>

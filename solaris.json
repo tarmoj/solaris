@@ -9,6 +9,311 @@
             "fileName": "kiireTremolo.mp3",
             "name": "kiireTremolo",
             "text": "Kiire tremolo."
+        },
+        {
+            "fileName": "Ühtlane.mp3",
+            "name": "Ühtlane",
+            "text": "Ühtlane võnge"
+        },
+        {
+            "fileName": "Rock1.mp3",
+            "name": "Rock1",
+            "text": "Saab mängida rock muusikat"
+        },
+        {
+            "fileName": "tappingtehnina.mp3",
+            "name": "tappingtehnina",
+            "text": "saan tapping tehnikat teha"
+        },
+        {
+            "fileName": "Efektipedaalid.mp3",
+            "name": "Efektipedaalid",
+            "text": "Efektipedaalid"
+        },
+        {
+            "fileName": "Emotsioonide_kasutamine.mp3",
+            "name": "Emotsioonide_kasutamine",
+            "text": "Kasuta erinevaid emotsioone."
+        },
+        {
+            "fileName": "tappingtehnika.mp3",
+            "name": "tappingtehnika",
+            "text": "saan tapping tehnikat teha"
+        },
+        {
+            "fileName": "meloodia.mp3",
+            "name": "meloodia",
+            "text": "Ilus meloodia"
+        },
+        {
+            "fileName": "Bend.mp3",
+            "name": "Bend",
+            "text": "Bendiga_võimeline_mängima"
+        },
+        {
+            "fileName": "Akordid!.mp3",
+            "name": "Akordid!",
+            "text": "Saan mängida akorde"
+        },
+        {
+            "fileName": "Impulsid.mp3",
+            "name": "Impulsid",
+            "text": "Erinevad lühikesed impulsid"
+        },
+        {
+            "fileName": "3nooti.mp3",
+            "name": "3nooti",
+            "text": "Tekitab 3 nooti korraga"
+        },
+        {
+            "fileName": "Kõlavärvide_kasutamine.mp3",
+            "name": "Kõlavärvide_kasutamine",
+            "text": "Kasuta erinevaid kõlavärve."
+        },
+        {
+            "fileName": "jada.mp3",
+            "name": "jada",
+            "text": "Eellöökide ja põhinootide jada."
+        },
+        {
+            "fileName": "Harmoonia1.mp3",
+            "name": "Harmoonia1",
+            "text": "Mängi akorde"
+        },
+        {
+            "fileName": "häälikud.mp3",
+            "name": "häälikud",
+            "text": "Saab erinevaid häälikuid tekitada"
+        },
+        {
+            "fileName": "Eristiilid.mp3",
+            "name": "Eristiilid",
+            "text": "Saan mängida peaaegu kõiki stiile oma pilliga."
+        },
+        {
+            "fileName": "Akord.mp3",
+            "name": "Akord",
+            "text": "Palju noote korraga"
+        },
+        {
+            "fileName": "slap.mp3",
+            "name": "slap",
+            "text": "saab teha slap'i"
+        },
+        {
+            "fileName": "klaaspudel.mp3",
+            "name": "klaaspudel",
+            "text": "Klaas pudeliga mängimine,"
+        },
+        {
+            "fileName": "Lgato.mp3",
+            "name": "Lgato",
+            "text": "Mängi legatos"
+        },
+        {
+            "fileName": "oktavites.mp3",
+            "name": "oktavites",
+            "text": "noote oktavites mängida"
+        },
+        {
+            "fileName": "Väänamine.mp3",
+            "name": "Väänamine",
+            "text": "Noote saab väänata"
+        },
+        {
+            "fileName": "Feedback.mp3",
+            "name": "Feedback",
+            "text": "Feedback"
+        },
+        {
+            "fileName": "kommvõipomm.mp3",
+            "name": "kommvõipomm",
+            "text": "LANGEVA POMMI KÕLA."
+        },
+        {
+            "fileName": "käristamine.mp3",
+            "name": "käristamine",
+            "text": "minu pilli saab käristada"
+        },
+        {
+            "fileName": "laarsusvslaarsus.mp3",
+            "name": "laarsusvslaarsus",
+            "text": "regulaarsus vaheldumisi irregulaarsusega"
+        },
+        {
+            "fileName": "Pidevmüraringis.mp3",
+            "name": "Pidevmüraringis",
+            "text": "Ringikujulised liigutused tekitavad pidevat müraheli."
+        },
+        {
+            "fileName": "Bleee.mp3",
+            "name": "Bleee",
+            "text": "Väga valjult, saab mediaatoriga mängida, saab mängida flasolette, saab mängida rütmi partiid"
+        },
+        {
+            "fileName": "akordid.mp3",
+            "name": "akordid",
+            "text": "saab mängida akorde"
+        },
+        {
+            "fileName": "Harbasmel.mp3",
+            "name": "Harbasmel",
+            "text": "Mängi harmooniat, bassi ja meloodiat samal ajal"
+        },
+        {
+            "fileName": "summutatustlahtiseks.mp3",
+            "name": "summutatustlahtiseks",
+            "text": "summutatud helid vaheldumisi lahtiste helidega"
+        },
+        {
+            "fileName": "erikõlavärvid.mp3",
+            "name": "erikõlavärvid",
+            "text": "saab erinevaid kõlavärve tekitada"
+        },
+        {
+            "fileName": "Immitatsioon.mp3",
+            "name": "Immitatsioon",
+            "text": "Imiteerida trummi"
+        },
+        {
+            "fileName": "Dünaamilisus.mp3",
+            "name": "Dünaamilisus",
+            "text": "Saab mängida dünaamikaga."
+        },
+        {
+            "fileName": "Kaoskaoskaos.mp3",
+            "name": "Kaoskaoskaos",
+            "text": "Täielik kaos"
+        },
+        {
+            "fileName": "jacksonhehe356.mp3",
+            "name": "jacksonhehe356",
+            "text": "Lühinoodid, pikanoodid, erinoodipikkused, mõmisemine"
+        },
+        {
+            "fileName": "Ooper.mp3",
+            "name": "Ooper",
+            "text": "Klassikaline vokaaltehnika"
+        },
+        {
+            "fileName": "glissandovõiasi.mp3",
+            "name": "glissandovõiasi",
+            "text": "saab glissandos vahetada registreid"
+        },
+        {
+            "fileName": "summutanoote.mp3",
+            "name": "summutanoote",
+            "text": "summuta noote"
+        },
+        {
+            "fileName": "paisuvmitmehäälsus.mp3",
+            "name": "paisuvmitmehäälsus",
+            "text": "Võimeline mängima mitmehäälselt paisuvalt"
+        },
+        {
+            "fileName": "Veendumus.mp3",
+            "name": "Veendumus",
+            "text": "Pill on pea taga ja ikka mängin"
+        },
+        {
+            "fileName": "Kristjan1234.mp3",
+            "name": "Kristjan1234",
+            "text": "Glissandomäng, kiriku keel, pizzicatot, pehmelt"
+        },
+        {
+            "fileName": "kõlajakuju.mp3",
+            "name": "kõlajakuju",
+            "text": "muuda hääle kõla ja kuju"
+        },
+        {
+            "fileName": "helid230.mp3",
+            "name": "helid230",
+            "text": "kõrgeid noodid, legato, trummide imiteerimine,"
+        },
+        {
+            "fileName": "harmoonia.mp3",
+            "name": "harmoonia",
+            "text": "harmoonia"
+        },
+        {
+            "fileName": "g3.mp3",
+            "name": "g3",
+            "text": "madalaim noot g3"
+        },
+        {
+            "fileName": "Mitunooti.mp3",
+            "name": "Mitunooti",
+            "text": "Mitu nooti ühe vajutusrga"
+        },
+        {
+            "fileName": "Kaootilisedimpulsid.mp3",
+            "name": "Kaootilisedimpulsid",
+            "text": "Kaootilised impulsid erinevate lühikeste helidega"
+        },
+        {
+            "fileName": "Rütmipartii.mp3",
+            "name": "Rütmipartii",
+            "text": "Saan mängida rütmipartiid"
+        },
+        {
+            "fileName": "flažolett.mp3",
+            "name": "flažolett",
+            "text": "Saab mängida flažolette"
+        },
+        {
+            "fileName": "Harmoonia.mp3",
+            "name": "Harmoonia",
+            "text": "Saab mängida harmooniat"
+        },
+        {
+            "fileName": "Siil2025jeje.mp3",
+            "name": "Siil2025jeje",
+            "text": "Erisagedusega noodid, poognag, heliimiteerija, venitatud noodid"
+        },
+        {
+            "fileName": "lühikesinoote.mp3",
+            "name": "lühikesinoote",
+            "text": "Ma saan mängida lühikesi noote"
+        },
+        {
+            "fileName": "oktavid.mp3",
+            "name": "oktavid",
+            "text": "Noote oktavites mängisa"
+        },
+        {
+            "fileName": "Mängimine.mp3",
+            "name": "Mängimine",
+            "text": "Saab mängida nii kõrgelt kui madalalt"
+        },
+        {
+            "fileName": "Kõnelus.mp3",
+            "name": "Kõnelus",
+            "text": "Saan mängida ooperi/vokaliisi"
+        },
+        {
+            "fileName": "Pizz.mp3",
+            "name": "Pizz",
+            "text": "Pizzicato"
+        },
+        {
+            "fileName": "Valivali.mp3",
+            "name": "Valivali",
+            "text": "Väga valjult"
+        },
+        {
+            "fileName": "glissando.mp3",
+            "name": "glissando",
+            "text": "saab mängida glissandot"
+        },
+        {
+            "fileName": "gainvilin.mp3",
+            "name": "gainvilin",
+            "text": "palju gaini paneb vilisema"
+        },
+        {
+            "fileName": "Kirikukell.mp3",
+            "name": "Kirikukell",
+            "text": "Kirikukell"
         }
     ],
     "events": [
@@ -21,19 +326,409 @@
         },
         {
             "channels": [
-                "1",
-                "2",
-                "3"
+                "5"
             ],
-            "name": "kiireTremolo",
-            "time": 15
+            "name": "Veendumus",
+            "time": 400
+        },
+        {
+            "channels": [
+                "7"
+            ],
+            "name": "summutatustlahtiseks",
+            "time": 245
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "3nooti",
+            "time": 1120
+        },
+        {
+            "channels": [
+                "6"
+            ],
+            "name": "paisuvmitmehäälsus",
+            "time": 350
+        },
+        {
+            "channels": [
+                "5"
+            ],
+            "name": "slap",
+            "time": 855
+        },
+        {
+            "channels": [
+                "10"
+            ],
+            "name": "Eristiilid",
+            "time": 680
+        },
+        {
+            "channels": [
+                "11"
+            ],
+            "name": "test",
+            "time": 634
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "Kaootilisedimpulsid",
+            "time": 1120
+        },
+        {
+            "channels": [
+                "6"
+            ],
+            "name": "paisuvmitmehäälsus",
+            "time": 355
+        },
+        {
+            "channels": [
+                "10"
+            ],
+            "name": "Akordid!",
+            "time": 190
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "Rütmipartii",
+            "time": 750
+        },
+        {
+            "channels": [
+                "11"
+            ],
+            "name": "tappingtehnina",
+            "time": 720
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "meloodia",
+            "time": 410
+        },
+        {
+            "channels": [
+                "10"
+            ],
+            "name": "Dünaamilisus",
+            "time": 107
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "flažolett",
+            "time": 715
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "Immitatsioon",
+            "time": 430
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "akordid",
+            "time": 125
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "Pidevmüraringis",
+            "time": 590
+        },
+        {
+            "channels": [
+                "6"
+            ],
+            "name": "Ühtlane",
+            "time": 825
+        },
+        {
+            "channels": [
+                "11"
+            ],
+            "name": "Bend",
+            "time": 605
+        },
+        {
+            "channels": [
+                "6"
+            ],
+            "name": "Emotsioonide_kasutamine",
+            "time": 582
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "Väänamine",
+            "time": 690
         },
         {
             "channels": [
                 "1"
             ],
-            "name": "kiireTremolo",
-            "time": 20
+            "name": "Harmoonia1",
+            "time": 505
+        },
+        {
+            "channels": [
+                "0"
+            ],
+            "name": "Kõlavärvide_kasutamine",
+            "time": 615
+        },
+        {
+            "channels": [
+                "9"
+            ],
+            "name": "jada",
+            "time": 370
+        },
+        {
+            "channels": [
+                "2"
+            ],
+            "name": "Dünaamilisus",
+            "time": 860
+        },
+        {
+            "channels": [
+                "0"
+            ],
+            "name": "Kõlavärvide_kasutamine",
+            "time": 1160
+        },
+        {
+            "channels": [
+                "12"
+            ],
+            "name": "harmoonia",
+            "time": 513
+        },
+        {
+            "channels": [
+                "3"
+            ],
+            "name": "meloodia",
+            "time": 960
+        },
+        {
+            "channels": [
+                "7"
+            ],
+            "name": "Väänamine",
+            "time": 705
+        },
+        {
+            "channels": [
+                "4"
+            ],
+            "name": "Kõlavärvide_kasutamine",
+            "time": 615
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "lühikesinoote",
+            "time": 315
+        },
+        {
+            "channels": [
+                "7"
+            ],
+            "name": "Immitatsioon",
+            "time": 206
+        },
+        {
+            "channels": [
+                "12"
+            ],
+            "name": "akordid",
+            "time": 747
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "g3",
+            "time": 330
+        },
+        {
+            "channels": [
+                "7"
+            ],
+            "name": "Kõlavärvide_kasutamine",
+            "time": 715
+        },
+        {
+            "channels": [
+                "2"
+            ],
+            "name": "Bleee",
+            "time": 1065
+        },
+        {
+            "channels": [
+                "5"
+            ],
+            "name": "oktavid",
+            "time": 600
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "Lgato",
+            "time": 860
+        },
+        {
+            "channels": [
+                "4"
+            ],
+            "name": "Mängimine",
+            "time": 855
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "Akord",
+            "time": 593
+        },
+        {
+            "channels": [
+                "4"
+            ],
+            "name": "akordid",
+            "time": 870
+        },
+        {
+            "channels": [
+                "5"
+            ],
+            "name": "Kõnelus",
+            "time": 1005
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "Valivali",
+            "time": 899
+        },
+        {
+            "channels": [
+                "11"
+            ],
+            "name": "helid230",
+            "time": 634
+        },
+        {
+            "channels": [
+                "7"
+            ],
+            "name": "slap",
+            "time": 390
+        },
+        {
+            "channels": [
+                "12"
+            ],
+            "name": "Pizz",
+            "time": 927
+        },
+        {
+            "channels": [
+                "7"
+            ],
+            "name": "glissandovõiasi",
+            "time": 460
+        },
+        {
+            "channels": [
+                "3"
+            ],
+            "name": "gainvilin",
+            "time": 1155
+        },
+        {
+            "channels": [
+                "5"
+            ],
+            "name": "Ooper",
+            "time": 600
+        },
+        {
+            "channels": [
+                "10"
+            ],
+            "name": "erikõlavärvid",
+            "time": 908
+        },
+        {
+            "channels": [
+                "4"
+            ],
+            "name": "Kirikukell",
+            "time": 890
+        },
+        {
+            "channels": [
+                "10"
+            ],
+            "name": "Lgato",
+            "time": 1030
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "häälikud",
+            "time": 895
+        },
+        {
+            "channels": [
+                "12"
+            ],
+            "name": "Rock1",
+            "time": 1205
+        },
+        {
+            "channels": [
+                "8"
+            ],
+            "name": "Efektipedaalid",
+            "time": 945
+        },
+        {
+            "channels": [
+                "12"
+            ],
+            "name": "Kaoskaoskaos",
+            "time": 430
+        },
+        {
+            "channels": [
+                "0"
+            ],
+            "name": "Rock1",
+            "time": 1145
         }
     ]
 }
