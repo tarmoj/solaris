@@ -311,11 +311,41 @@
         </div>
     </div>
     
-    <div class="container">
+<!--    new ----->
+    <div id="audioUnlockScreen" style="
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #000;
+    color: #4a9eff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 99999;
+">
+    <h2 style="margin-bottom: 20px;">🔊 Enable Audio</h2>
+    <button id="enableAudioBtn" style="
+        padding: 16px 40px;
+        font-size: 1.2em;
+        background: #4a9eff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    ">
+        Tap to Start
+    </button>
+</div>
+
+<!------->
+    
+    <div id="mainDiv" class="container" style="display:none;">
         <div class="header">
             <h1>Solaris - Performer</h1>
             <a href="../index.html">← Back to Main Menu</a>
         </div>
+        
+        
         
         <!-- Controls Section -->
         <section class="section">
@@ -331,7 +361,7 @@
                     <div class="volume-value" id="volumeValue">80%</div>
                 </div>
                 
-                <button id="enableAudioBtn">Enable Audio</button>
+<!--                <button id="enableAudioBtn">Enable Audio</button>-->
                 <button id="connectBtn" class="hidden">Connect</button>
                 <button id="lockBtn">Lock Mode</button>
             </div>
@@ -564,6 +594,10 @@
                     audioContext = null;
                 }
             }
+            
+            // open screen
+            document.getElementById('audioUnlockScreen').style.display = 'none';
+            document.getElementById('mainDiv').style.display = 'block';
             
             if (audioContext) {
                
