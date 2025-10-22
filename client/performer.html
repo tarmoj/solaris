@@ -566,6 +566,9 @@
             }
             
             if (audioContext) {
+               
+                    
+            
                 try {
                     // Create gain node if not present
                     if (!gainNode) {
@@ -583,9 +586,18 @@
                     try {
                         const sampleRate = audioContext.sampleRate || 44100;
                         const buffer = audioContext.createBuffer(1, sampleRate * 0.01, sampleRate); // 10ms silent buffer
+                        
+                        // short click to enable audio on iPhone
+                        const data = buffer.getChannelData(0);
+                        for (let i = 0; i < data.length; i++) {
+                            data[i] = Math.sin((i / 50) * Math.PI * 2) * 0.001; // very quiet click
+                        }
+                        
+                        
                         const source = audioContext.createBufferSource();
                         source.buffer = buffer;
                         source.connect(gainNode);
+                        console.log('AudioContext state:', audioContext.state);
                         source.start(0);
                         source.stop(0);
                     } catch (unlockErr) {
@@ -596,6 +608,7 @@
                     enableAudioBtn.disabled = true;
                     enableAudioBtn.style.background = '#2d5016';
                     console.log('Audio context enabled');
+                    
                 } catch (err) {
                     console.error('Failed to enable audio context:', err);
                     alert('Failed to enable Web Audio: ' + (err && err.message ? err.message : String(err)));
@@ -606,7 +619,8 @@
                     const dummy = new Audio();
                     // Create a tiny silent WAV data URI (1 sample) or use a short base64 silence if available.
                     // For simplicity, try to play an empty audio element (may still fail).
-                    dummy.volume = 0;
+                    dummy.volume = 0.1;
+                    dummy.src = 'sine.mp3'
                     await dummy.play();
                     audioEnabled = true;
                     enableAudioBtn.textContent = 'Audio Enabled ✓';
