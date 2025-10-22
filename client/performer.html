@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="et">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solaris - Performer</title>
+    <title>Solaris - Esitaja</title>
+    <script src="../translations/i18n.js"></script>
     <style>
         * {
             margin: 0;
@@ -299,15 +300,15 @@
 <body>
     <!-- Time Display (always visible, even on locked screen) -->
     <div class="time-display">
-        <div class="time-label">Current Time</div>
+        <div class="time-label" data-i18n="performer.currentTime">Current Time</div>
         <div class="time-value" id="timeDisplay">00:00</div>
     </div>
     
     <!-- Lock Overlay -->
     <div class="lock-overlay" id="lockOverlay">
         <div class="lock-message">
-            <h2>🔒 LOCKED</h2>
-            <p>Triple-click/tap to unlock</p>
+            <h2 data-i18n="performer.locked">🔒 LOCKED</h2>
+            <p data-i18n="performer.unlockHint">Triple-click/tap to unlock</p>
         </div>
     </div>
     
@@ -323,7 +324,7 @@
     flex-direction: column;
     z-index: 99999;
 ">
-    <h2 style="margin-bottom: 20px;">🔊 Enable Audio</h2>
+    <h2 style="margin-bottom: 20px;" data-i18n="performer.enableAudioTitle">🔊 Enable Audio</h2>
     <button id="enableAudioBtn" style="
         padding: 16px 40px;
         font-size: 1.2em;
@@ -332,7 +333,7 @@
         border: none;
         border-radius: 8px;
         cursor: pointer;
-    ">
+    " data-i18n="performer.tapToStart">
         Tap to Start
     </button>
 </div>
@@ -341,8 +342,8 @@
     
     <div id="mainDiv" class="container" style="display:none;">
         <div class="header">
-            <h1>Solaris - Performer</h1>
-            <a href="../index.html">← Back to Main Menu</a>
+            <h1 data-i18n="performer.title">Solaris - Performer</h1>
+            <a href="../index.html" data-i18n="common.backToMenu">← Back to Main Menu</a>
         </div>
         
         
@@ -351,29 +352,29 @@
         <section class="section">
             <div class="controls">
                 <div class="control-group">
-                    <label for="channelInput">Channel (1-12):</label>
+                    <label for="channelInput" data-i18n="performer.channel">Channel (1-12):</label>
                     <input type="number" id="channelInput" min="1" max="12" value="1">
                 </div>
                 
                 <div class="volume-control">
-                    <label for="volumeSlider">Volume:</label>
+                    <label for="volumeSlider" data-i18n="performer.volume">Volume:</label>
                     <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
                     <div class="volume-value" id="volumeValue">80%</div>
                 </div>
                 
 <!--                <button id="enableAudioBtn">Enable Audio</button>-->
-                <button id="connectBtn" class="hidden">Connect</button>
-                <button id="lockBtn">Lock Mode</button>
+                <button id="connectBtn" class="hidden" data-i18n="performer.connect">Connect</button>
+                <button id="lockBtn" data-i18n="performer.lockMode">Lock Mode</button>
             </div>
             
-            <div id="statusDisplay" class="status disconnected">
+            <div id="statusDisplay" class="status disconnected" data-i18n="performer.connectingToServer">
                 Connecting to server...
             </div>
         </section>
         
         <!-- Display Area -->
         <div class="display-area">
-            <div id="displayText" class="placeholder-text">
+            <div id="displayText" class="placeholder-text" data-i18n="performer.waitingForMessages">
                 Waiting for messages...
             </div>
         </div>
@@ -434,19 +435,19 @@
                 
                 ws.onopen = () => {
                     console.log('WebSocket connected');
-                    updateStatus('Connected to server (Channel ' + currentChannel + ')', true);
+                    updateStatus(window.i18n.t('performer.connectedToServerChannel', { channel: currentChannel }), true);
                     connectBtn.classList.add('hidden');
                 };
                 
                 ws.onclose = () => {
                     console.log('WebSocket disconnected');
-                    updateStatus('Disconnected from server', false);
+                    updateStatus(window.i18n.t('performer.disconnectedFromServer'), false);
                     connectBtn.classList.remove('hidden');
                 };
                 
                 ws.onerror = (error) => {
                     console.error('WebSocket error:', error);
-                    updateStatus('Connection error', false);
+                    updateStatus(window.i18n.t('performer.connectionError'), false);
                 };
                 
                 ws.onmessage = (event) => {
@@ -455,7 +456,7 @@
                 };
             } catch (error) {
                 console.error('Failed to create WebSocket:', error);
-                updateStatus('Failed to connect: ' + error.message, false);
+                updateStatus(window.i18n.t('performer.failedToConnect', { error: error.message }), false);
                 connectBtn.classList.remove('hidden');
             }
         }
@@ -524,7 +525,7 @@
                     source.connect(gainNode || audioContext.destination);
                     
                     source.onended = () => {
-                        displayText.textContent = 'Waiting for messages...';
+                        displayText.textContent = window.i18n.t('performer.waitingForMessages');
                         displayText.className = 'placeholder-text';
                     };
                     
@@ -552,7 +553,7 @@
                 });
                 
                 audio.addEventListener('ended', () => {
-                    displayText.textContent = 'Waiting for messages...';
+                    displayText.textContent = window.i18n.t('performer.waitingForMessages');
                     displayText.className = 'placeholder-text';
                 });
             } catch (error) {
@@ -567,7 +568,9 @@
             if (value >= 1 && value <= 12) {
                 currentChannel = value;
                 saveChannel();
-                updateStatus('Channel changed to ' + currentChannel + (ws && ws.readyState === WebSocket.OPEN ? ' (Connected)' : ' (Disconnected)'), ws && ws.readyState === WebSocket.OPEN);
+                const statusMsg = window.i18n.t('performer.channelChanged', { channel: currentChannel }) + 
+                    (ws && ws.readyState === WebSocket.OPEN ? ' (' + window.i18n.t('common.connected') + ')' : ' (' + window.i18n.t('common.disconnected') + ')');
+                updateStatus(statusMsg, ws && ws.readyState === WebSocket.OPEN);
             } else {
                 channelInput.value = currentChannel;
             }
@@ -657,7 +660,7 @@
                     dummy.src = 'sine.mp3'
                     await dummy.play();
                     audioEnabled = true;
-                    enableAudioBtn.textContent = 'Audio Enabled ✓';
+                    enableAudioBtn.textContent = window.i18n.t('performer.audioEnabledCheck');
                     enableAudioBtn.disabled = true;
                     enableAudioBtn.style.background = '#2d5016';
                     console.log('Fallback HTMLAudio enabled by user gesture');
@@ -702,9 +705,13 @@
             e.preventDefault();
         });
         
-        // Initialize
-        loadChannel();
-        connectWebSocket();
+        // Initialize translations, then start application
+        document.addEventListener('DOMContentLoaded', async () => {
+            await window.i18n.init();
+            // Initialize after translations are ready
+            loadChannel();
+            connectWebSocket();
+        });
     </script>
 </body>
 </html>
