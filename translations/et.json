@@ -82,7 +82,19 @@
     "deleteCommandConfirm": "Kas oled kindel, et soovid kustutada käskluse \"{name}\"?",
     "deleteEventConfirm": "Kas oled kindel, et soovid selle sündmuse kustutada?",
     "commandDeleted": "Käsklus kustutatud edukalt!",
-    "eventDeleted": "Sündmus kustutatud edukalt!"
+    "eventDeleted": "Sündmus kustutatud edukalt!",
+    "projectMenu": "Projekti menüü",
+    "newProject": "Uus projekt",
+    "loadProject": "Laadi projekt",
+    "saveAs": "Salvesta kui",
+    "currentProject": "Praegune projekt:",
+    "projectName": "Projekti nimi (ilma tühikuteta, ilma .json laiendita):",
+    "createProject": "Loo projekt",
+    "selectProject": "Vali laadimiseks projekt:",
+    "loadingProjects": "Laadin projekte...",
+    "loadSelectedProject": "Laadi valitud projekt",
+    "newProjectName": "Uue projekti nimi (ilma tühikuteta, ilma .json laiendita):",
+    "saveProject": "Salvesta projekt"
   },
   "performer": {
     "title": "Solaris - Esitaja",

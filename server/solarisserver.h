@@ -28,6 +28,8 @@ public:
     
     void loadSolarisJSON();
     void saveSolarisJSON();
+    void loadSolarisJSON(const QString &fileName);
+    void saveSolarisJSON(const QString &fileName);
 
     void sendToAll(QString message);
     void sendTest();
@@ -55,6 +57,7 @@ private:
     QStringList entries;
     QString eventsFile;
     QString solarisJSONFile;
+    QString activeJSONFile;
     QJsonObject solarisData;
 
 };
