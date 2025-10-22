@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Solaris",
-    "description": "Software for performance piece \"Solaris\" by Andrus Kallastu & Co."
+    "description": "Software for performance piece \"Solaris\" by Andrus Kallastu & Co.",
+    "performer": "Performer",
+    "editor": "Editor"
   },
   "common": {
     "backToMenu": "← Back to Main Menu",

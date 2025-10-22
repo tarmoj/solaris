@@ -347,7 +347,7 @@
         },
         {
             "channels": [
-                "6"
+                "0"
             ],
             "name": "paisuvmitmehäälsus",
             "time": 350
@@ -375,38 +375,10 @@
         },
         {
             "channels": [
-                "9"
-            ],
-            "name": "Kaootilisedimpulsid",
-            "time": 1120
-        },
-        {
-            "channels": [
-                "6"
-            ],
-            "name": "paisuvmitmehäälsus",
-            "time": 355
-        },
-        {
-            "channels": [
                 "10"
             ],
             "name": "Akordid!",
             "time": 190
-        },
-        {
-            "channels": [
-                "9"
-            ],
-            "name": "Rütmipartii",
-            "time": 750
-        },
-        {
-            "channels": [
-                "11"
-            ],
-            "name": "tappingtehnina",
-            "time": 720
         },
         {
             "channels": [
@@ -466,17 +438,10 @@
         },
         {
             "channels": [
-                "6"
+                "0"
             ],
             "name": "Emotsioonide_kasutamine",
             "time": 582
-        },
-        {
-            "channels": [
-                "9"
-            ],
-            "name": "Väänamine",
-            "time": 690
         },
         {
             "channels": [
@@ -641,10 +606,10 @@
         },
         {
             "channels": [
-                "7"
+                "1"
             ],
-            "name": "slap",
-            "time": 390
+            "name": "Valivali",
+            "time": 899
         },
         {
             "channels": [
@@ -704,13 +669,6 @@
         },
         {
             "channels": [
-                "12"
-            ],
-            "name": "Rock1",
-            "time": 1205
-        },
-        {
-            "channels": [
                 "8"
             ],
             "name": "Efektipedaalid",
@@ -720,15 +678,15 @@
             "channels": [
                 "12"
             ],
-            "name": "Kaoskaoskaos",
-            "time": 430
+            "name": "Rock1",
+            "time": 1145
         },
         {
             "channels": [
                 "0"
             ],
-            "name": "Rock1",
-            "time": 1145
+            "name": "Emotsioonide_kasutamine",
+            "time": 20
         }
     ]
 }

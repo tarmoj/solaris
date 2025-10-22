@@ -14,8 +14,11 @@ class I18n {
      * Load translation file
      */
     async loadLanguage(language) {
+        const base = new URL('.', import.meta.url);
+        const langUrl = new URL(`${language}.json`, base);
+        
         try {
-            const response = await fetch(`../translations/${language}.json`);
+            const response = await fetch(langUrl);
             if (!response.ok) {
                 throw new Error(`Failed to load language file: ${language}`);
             }

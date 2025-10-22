@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Solaris",
-    "description": "Tarkvara esitusele \"Solaris\" - Andrus Kallastu & Co."
+    "description": "Tarkvara interaktiivsele esitusprojektile \"Solaris\".",
+    "performer": "Esitaja",
+    "editor": "Haldamine"
   },
   "common": {
     "backToMenu": "← Tagasi pealehele",
@@ -17,11 +19,11 @@
     "disconnected": "Ühendus puudub"
   },
   "menu": {
-    "editor": "Redaktor",
+    "editor": "Haldamine",
     "performer": "Esitaja"
   },
   "editor": {
-    "title": "Solaris - Redaktor",
+    "title": "Solaris - Haldamine",
     "newCommand": "Uus käsklus",
     "commandText": "Käskluse tekst:",
     "commandTextPlaceholder": "Sisestage kõneks konverteeritav tekst...",
@@ -45,10 +47,10 @@
     "addEvent": "Lisa sündmus",
     "events": "Sündmused",
     "refreshEvents": "Värskenda sündmusi",
-    "testEvent": "Testi sündmust",
+    "testEvent": "Saada: Test",
     "start": "Alusta",
     "stop": "Peata",
-    "seek": "Otsi",
+    "seek": "Mine",
     "currentTime": "Praegune aeg:",
     "editCommand": "Muuda käsklust",
     "editEvent": "Muuda sündmust",
