@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="et">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solaris - Main Menu</title>
+    <title>Solaris - Pealeht</title>
+    <script src="translations/i18n.js"></script>
     <style>
         * {
             margin: 0;
@@ -78,14 +79,21 @@
 </head>
 <body>
     <div class="container">
-        <h1>Solaris</h1>
+        <h1 data-i18n="app.name">Solaris</h1>
         <nav class="menu">
-            <a href="client/editor.html" class="menu-link">Editor</a>
-            <a href="client/performer.html" class="menu-link">Performer</a>
+            <a href="client/editor.html" class="menu-link" data-i18n="menu.editor">Editor</a>
+            <a href="client/performer.html" class="menu-link" data-i18n="menu.performer">Performer</a>
         </nav>
-        <p class="description">
+        <p class="description" data-i18n="app.description">
             Software for performance piece "Solaris" by Andrus Kallastu &amp; Co.
         </p>
     </div>
+    
+    <script>
+        // Initialize translations
+        document.addEventListener('DOMContentLoaded', async () => {
+            await window.i18n.init();
+        });
+    </script>
 </body>
 </html>
