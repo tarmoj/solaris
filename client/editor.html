@@ -585,7 +585,17 @@
         // WebSocket connection
         let ws = null;
         let lastGeneratedFile = null;
-        let currentProject = 'solaris'; // Default project name
+        
+        // Load currentProject from localStorage or use default
+        let currentProject = localStorage.getItem('currentProject') || 'solaris';
+        console.log('Loaded currentProject from localStorage:', currentProject);
+        
+        // Helper function to save currentProject to localStorage
+        function saveCurrentProject(projectName) {
+            currentProject = projectName;
+            localStorage.setItem('currentProject', projectName);
+            console.log('Saved currentProject to localStorage:', projectName);
+        }
         
         // Helper function to get current project JSON URL
         function getCurrentProjectURL() {
@@ -599,6 +609,12 @@
                 ws.onopen = () => {
                     console.log('WebSocket connected');
                     showStatus('commandStatus', window.i18n.t('editor.connectedToServer'), 'success');
+                    
+                    // Send current project to server
+                    if (currentProject !== 'solaris') {
+                        ws.send(`loadProject | ${currentProject}.json`);
+                        console.log('Sent loadProject to server:', currentProject);
+                    }
                 };
                 
                 ws.onclose = () => {
@@ -619,8 +635,11 @@
                     const message = event.data;
                     if (message.startsWith('currentProject|')) {
                         const projectName = message.split('|')[1];
-                        currentProject = projectName;
-                        console.log('Current project set to:', currentProject);
+                        saveCurrentProject(projectName);
+                        
+                        // Update display
+                        const displayName = projectName.endsWith('.json') ? projectName : projectName + '.json';
+                        document.getElementById('currentProjectDisplay').textContent = displayName;
                     } else if (message.startsWith('time|')) {
                         const timeInSeconds = parseInt(message.split('|')[1]);
                         const minutes = Math.floor(timeInSeconds / 60);
@@ -1484,6 +1503,11 @@
         // Initialize translations and then load data
         document.addEventListener('DOMContentLoaded', async () => {
             await window.i18n.init();
+            
+            // Update display with current project from localStorage
+            const displayName = currentProject.endsWith('.json') ? currentProject : currentProject + '.json';
+            document.getElementById('currentProjectDisplay').textContent = displayName;
+            
             // Load commands and events after translations are ready
             loadCommands();
             loadEvents();
