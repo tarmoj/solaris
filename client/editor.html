@@ -587,6 +587,11 @@
         let lastGeneratedFile = null;
         let currentProject = 'solaris'; // Default project name
         
+        // Helper function to get current project JSON URL
+        function getCurrentProjectURL() {
+            return `../${currentProject}.json?nocache=${Date.now()}`;
+        }
+        
         function connectWebSocket() {
             try {
                 ws = new WebSocket('wss://live.uuu.ee:1234');
@@ -692,7 +697,7 @@
                 lastGeneratedFile = commandName;
                 showStatus('commandStatus', window.i18n.t('editor.generatingAudio', { name: commandName }), 'info');
                 
-                // Wait for file generation and update solaris.json
+                // Wait for file generation and update project JSON
                 setTimeout(async () => {
                     await updateCommandInJSON(commandName, text);
                     document.getElementById('listenBtn').disabled = false;
@@ -705,11 +710,11 @@
             }
         });
         
-        // Function to update command in solaris.json
+        // Function to update command in current project JSON
         async function updateCommandInJSON(commandName, text) {
             try {
-                // Load current solaris.json
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                // Load current project JSON
+                const response = await fetch(getCurrentProjectURL());
                 let data;
                 
                 if (response.ok) {
@@ -741,14 +746,14 @@
                 
                 // Note: In a real implementation, we would send this to the server to write
                 // For now, we'll just log it (the server would need to handle this)
-                console.log('Updated solaris.json:', JSON.stringify(data, null, 2));
+                console.log('Updated project JSON:', JSON.stringify(data, null, 2));
                 
                 // Send update to server
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send('updateJSON | ' + JSON.stringify(data));
                 }
             } catch (error) {
-                console.error('Error updating solaris.json:', error);
+                console.error('Error updating project JSON:', error);
             }
         }
         
@@ -875,7 +880,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data;
                 
                 if (response.ok) {
@@ -931,7 +936,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Convert time to seconds
@@ -973,7 +978,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Update command text (name and fileName stay the same)
@@ -1011,15 +1016,15 @@
         // Global commands array
         let commandsData = [];
         
-        // Function to load commands from solaris.json
+        // Function to load commands from current project JSON
         async function loadCommands() {
             try {
                 showStatus('commandsStatus', window.i18n.t('editor.loadingCommands'), 'info');
                 
-                const response = await fetch(`../solaris.json?nocache=${Date.now()}`);
+                const response = await fetch(getCurrentProjectURL());
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load solaris.json: ' + response.statusText);
+                    throw new Error('Failed to load project JSON: ' + response.statusText);
                 }
                 
                 const data = await response.json();
@@ -1095,15 +1100,15 @@
         let eventsData = [];
         let currentSort = { column: null, direction: 'asc' };
         
-        // Function to load events from solaris.json
+        // Function to load events from current project JSON
         async function loadEvents() {
             try {
                 showStatus('eventsStatus', window.i18n.t('editor.loadingEvents'), 'info');
                 
-                const response = await fetch(`../solaris.json?nocache=${Date.now()}`);
+                const response = await fetch(getCurrentProjectURL());
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load solaris.json: ' + response.statusText);
+                    throw new Error('Failed to load project JSON: ' + response.statusText);
                 }
                 
                 const data = await response.json();
@@ -1258,7 +1263,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Remove command
@@ -1289,7 +1294,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Remove event
