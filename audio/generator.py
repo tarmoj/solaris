@@ -41,7 +41,7 @@ def generate_audio(text: str, output_path: str):
 def main():
     parser = argparse.ArgumentParser(description='Generate TTS audio using ElevenLabs API')
     parser.add_argument('text', help='Text to convert to speech')
-    parser.add_argument('channel', help='Channel subdirectory to save the file in')
+    parser.add_argument('channel', help='Channel subdirectory path (e.g., "audiofiles/projectName")')
     parser.add_argument('filename', help='Output filename (without .mp3 extension)')
     
     args = parser.parse_args()
@@ -49,8 +49,8 @@ def main():
     # Get the script's directory (audio/)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Create channel subdirectory if it doesn't exist
-    save_dir = os.path.join(script_dir, "audiofiles")
+    # Create full subdirectory path if it doesn't exist (supports nested dirs)
+    save_dir = os.path.join(script_dir, args.channel)
     os.makedirs(save_dir, exist_ok=True)
     
     # Construct output path

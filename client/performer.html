@@ -388,6 +388,7 @@
         let isLocked = false;
         let clickCount = 0;
         let clickTimer = null;
+        let currentProject = 'solaris'; // Default project name
         
         // DOM elements
         const channelInput = document.getElementById('channelInput');
@@ -463,6 +464,14 @@
         
         // Handle incoming WebSocket message
         function handleMessage(message) {
+            // Check for currentProject message format: 'currentProject|projectName'
+            if (message.startsWith('currentProject|')) {
+                const projectName = message.split('|')[1];
+                currentProject = projectName;
+                console.log('Current project set to:', currentProject);
+                return;
+            }
+            
             // Check for time message format: 'time|seconds'
             if (message.startsWith('time|')) {
                 const timeInSeconds = parseInt(message.split('|')[1]);
@@ -499,7 +508,7 @@
         // Utility: build audio file path from filename
         function buildAudioPath(fileName) {
             const cleanFileName = fileName.replace('.mp3', '');
-            return `../audio/audiofiles/${cleanFileName}.mp3`;
+            return `../audio/audiofiles/${currentProject}/${cleanFileName}.mp3`;
         }
         
         // Play audio using WebAudio if available and unlocked; otherwise fallback to HTMLAudio

@@ -82,7 +82,19 @@
     "deleteCommandConfirm": "Are you sure you want to delete command \"{name}\"?",
     "deleteEventConfirm": "Are you sure you want to delete this event?",
     "commandDeleted": "Command deleted successfully!",
-    "eventDeleted": "Event deleted successfully!"
+    "eventDeleted": "Event deleted successfully!",
+    "projectMenu": "Project Menu",
+    "newProject": "New Project",
+    "loadProject": "Load Project",
+    "saveAs": "Save As",
+    "currentProject": "Current Project:",
+    "projectName": "Project Name (no spaces, no .json extension):",
+    "createProject": "Create Project",
+    "selectProject": "Select a project to load:",
+    "loadingProjects": "Loading projects...",
+    "loadSelectedProject": "Load Selected Project",
+    "newProjectName": "New Project Name (no spaces, no .json extension):",
+    "saveProject": "Save Project"
   },
   "performer": {
     "title": "Solaris - Performer",

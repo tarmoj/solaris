@@ -324,6 +324,21 @@
             <a href="../index.html" data-i18n="common.backToMenu">← Back to Main Menu</a>
         </div>
         
+        <!-- Project Menu Section -->
+        <section class="section">
+            <h2 data-i18n="editor.projectMenu">Project Menu</h2>
+            <div class="button-group">
+                <button type="button" id="newProjectBtn" data-i18n="editor.newProject">New Project</button>
+                <button type="button" id="loadProjectBtn" class="secondary" data-i18n="editor.loadProject">Load Project</button>
+                <button type="button" id="saveAsBtn" class="secondary" data-i18n="editor.saveAs">Save As</button>
+            </div>
+            <div id="projectStatus" class="status hidden"></div>
+            <div style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 5px;">
+                <span style="color: #aaa; margin-right: 10px;" data-i18n="editor.currentProject">Current Project:</span>
+                <span id="currentProjectDisplay" style="color: #4a9eff; font-weight: bold;">solaris.json</span>
+            </div>
+        </section>
+        
         <!-- New Command Section -->
         <section class="section">
             <h2 data-i18n="editor.newCommand">New Command</h2>
@@ -503,10 +518,89 @@
         </div>
     </div>
     
+    <!-- New Project Modal -->
+    <div id="newProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.newProject">New Project</h3>
+                <button class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+            </div>
+            <form id="newProjectForm">
+                <div class="form-group">
+                    <label for="newProjectName" data-i18n="editor.projectName">Project Name (no spaces, no .json extension):</label>
+                    <input type="text" id="newProjectName" required pattern="[^\s]+">
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" data-i18n="editor.createProject">Create Project</button>
+                    <button type="button" class="secondary" onclick="closeNewProjectModal()" data-i18n="common.cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Load Project Modal -->
+    <div id="loadProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.loadProject">Load Project</h3>
+                <button class="close-btn" onclick="closeLoadProjectModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="editor.selectProject">Select a project to load:</label>
+                <select id="projectListSelect" size="8" style="min-height: 200px;">
+                    <option value="" data-i18n="editor.loadingProjects">Loading projects...</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" id="loadSelectedProjectBtn" data-i18n="editor.loadSelectedProject">Load Selected Project</button>
+                <button type="button" class="secondary" onclick="closeLoadProjectModal()" data-i18n="common.cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Save As Modal -->
+    <div id="saveAsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.saveAs">Save As</h3>
+                <button class="close-btn" onclick="closeSaveAsModal()">&times;</button>
+            </div>
+            <form id="saveAsForm">
+                <div class="form-group">
+                    <label for="saveAsName" data-i18n="editor.newProjectName">New Project Name (no spaces, no .json extension):</label>
+                    <input type="text" id="saveAsName" required pattern="[^\s]+">
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" data-i18n="editor.saveProject">Save Project</button>
+                    <button type="button" class="secondary" onclick="closeSaveAsModal()" data-i18n="common.cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <script>
         // WebSocket connection
         let ws = null;
         let lastGeneratedFile = null;
+        
+        // Load currentProject from localStorage or use default
+        let currentProject = localStorage.getItem('currentProject') || 'solaris';
+        console.log('Loaded currentProject from localStorage:', currentProject);
+        
+        // Helper function to save currentProject to localStorage
+        function saveCurrentProject(projectName) {
+            currentProject = projectName;
+            localStorage.setItem('currentProject', projectName);
+            console.log('Saved currentProject to localStorage:', projectName);
+        }
+        
+        // Helper function to get current project JSON URL
+        function getCurrentProjectURL() {
+            return `../${currentProject}.json?nocache=${Date.now()}`;
+        }
         
         function connectWebSocket() {
             try {
@@ -515,6 +609,12 @@
                 ws.onopen = () => {
                     console.log('WebSocket connected');
                     showStatus('commandStatus', window.i18n.t('editor.connectedToServer'), 'success');
+                    
+                    // Send current project to server
+                    if (currentProject !== 'solaris') {
+                        ws.send(`loadProject | ${currentProject}.json`);
+                        console.log('Sent loadProject to server:', currentProject);
+                    }
                 };
                 
                 ws.onclose = () => {
@@ -533,12 +633,52 @@
                     console.log('Received message:', event.data);
                     // Handle time messages
                     const message = event.data;
-                    if (message.startsWith('time|')) {
+                    if (message.startsWith('currentProject|')) {
+                        const projectName = message.split('|')[1];
+                        saveCurrentProject(projectName);
+                        
+                        // Update display
+                        const displayName = projectName.endsWith('.json') ? projectName : projectName + '.json';
+                        document.getElementById('currentProjectDisplay').textContent = displayName;
+                    } else if (message.startsWith('time|')) {
                         const timeInSeconds = parseInt(message.split('|')[1]);
                         const minutes = Math.floor(timeInSeconds / 60);
                         const seconds = timeInSeconds % 60;
                         const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                         document.getElementById('currentTimeDisplay').textContent = timeStr;
+                    } else if (message === 'dataUpdated') {
+                        // Data has been updated on the server, refresh commands and events
+                        console.log('Data updated, refreshing tables...');
+                        loadCommands();
+                        loadEvents();
+                    } else if (message.startsWith('projectCreated|')) {
+                        const projectName = message.split('|')[1];
+                        showStatus('projectStatus', `Project "${projectName}" created successfully!`, 'success');
+                        document.getElementById('currentProjectDisplay').textContent = projectName + '.json';
+                        closeNewProjectModal();
+                        // Refresh tables with empty data
+                        loadCommands();
+                        loadEvents();
+                    } else if (message.startsWith('projectLoaded|')) {
+                        const projectName = message.split('|')[1];
+                        showStatus('projectStatus', `Project "${projectName}" loaded successfully!`, 'success');
+                        document.getElementById('currentProjectDisplay').textContent = projectName;
+                        closeLoadProjectModal();
+                        // Refresh tables with new project data
+                        loadCommands();
+                        loadEvents();
+                    } else if (message.startsWith('projectSaved|')) {
+                        const projectName = message.split('|')[1];
+                        showStatus('projectStatus', `Project saved as "${projectName}.json" successfully!`, 'success');
+                        document.getElementById('currentProjectDisplay').textContent = projectName + '.json';
+                        closeSaveAsModal();
+                    } else if (message.startsWith('projectError|')) {
+                        const error = message.split('|')[1];
+                        showStatus('projectStatus', `Error: ${error}`, 'error');
+                    } else if (message.startsWith('projectList|')) {
+                        const parts = message.split('|');
+                        const projects = parts.slice(1);
+                        populateProjectList(projects);
                     }
                 };
             } catch (error) {
@@ -576,7 +716,7 @@
                 lastGeneratedFile = commandName;
                 showStatus('commandStatus', window.i18n.t('editor.generatingAudio', { name: commandName }), 'info');
                 
-                // Wait for file generation and update solaris.json
+                // Wait for file generation and update project JSON
                 setTimeout(async () => {
                     await updateCommandInJSON(commandName, text);
                     document.getElementById('listenBtn').disabled = false;
@@ -589,11 +729,11 @@
             }
         });
         
-        // Function to update command in solaris.json
+        // Function to update command in current project JSON
         async function updateCommandInJSON(commandName, text) {
             try {
-                // Load current solaris.json
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                // Load current project JSON
+                const response = await fetch(getCurrentProjectURL());
                 let data;
                 
                 if (response.ok) {
@@ -625,14 +765,14 @@
                 
                 // Note: In a real implementation, we would send this to the server to write
                 // For now, we'll just log it (the server would need to handle this)
-                console.log('Updated solaris.json:', JSON.stringify(data, null, 2));
+                console.log('Updated project JSON:', JSON.stringify(data, null, 2));
                 
                 // Send update to server
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send('updateJSON | ' + JSON.stringify(data));
                 }
             } catch (error) {
-                console.error('Error updating solaris.json:', error);
+                console.error('Error updating project JSON:', error);
             }
         }
         
@@ -759,7 +899,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data;
                 
                 if (response.ok) {
@@ -815,7 +955,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Convert time to seconds
@@ -857,7 +997,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Update command text (name and fileName stay the same)
@@ -895,15 +1035,15 @@
         // Global commands array
         let commandsData = [];
         
-        // Function to load commands from solaris.json
+        // Function to load commands from current project JSON
         async function loadCommands() {
             try {
                 showStatus('commandsStatus', window.i18n.t('editor.loadingCommands'), 'info');
                 
-                const response = await fetch(`../solaris.json?nocache=${Date.now()}`);
+                const response = await fetch(getCurrentProjectURL());
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load solaris.json: ' + response.statusText);
+                    throw new Error('Failed to load project JSON: ' + response.statusText);
                 }
                 
                 const data = await response.json();
@@ -979,15 +1119,15 @@
         let eventsData = [];
         let currentSort = { column: null, direction: 'asc' };
         
-        // Function to load events from solaris.json
+        // Function to load events from current project JSON
         async function loadEvents() {
             try {
                 showStatus('eventsStatus', window.i18n.t('editor.loadingEvents'), 'info');
                 
-                const response = await fetch(`../solaris.json?nocache=${Date.now()}`);
+                const response = await fetch(getCurrentProjectURL());
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load solaris.json: ' + response.statusText);
+                    throw new Error('Failed to load project JSON: ' + response.statusText);
                 }
                 
                 const data = await response.json();
@@ -1142,7 +1282,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Remove command
@@ -1173,7 +1313,7 @@
             
             try {
                 // Load current data
-                const response = await fetch('../solaris.json?nocache=' + Date.now());
+                const response = await fetch(getCurrentProjectURL());
                 let data = await response.json();
                 
                 // Remove event
@@ -1209,8 +1349,8 @@
             // Remove .mp3 extension if present
             fileName = fileName.replace('.mp3', '');
             
-            // Construct path: ../audio/directory/fileName.mp3
-            const audioPath = `../audio/${directory}/${fileName}.mp3`;
+            // Construct path: ../audio/directory/projectName/fileName.mp3
+            const audioPath = `../audio/${directory}/${currentProject}/${fileName}.mp3`;
             
             console.log('Playing audio:', audioPath);
             
@@ -1237,9 +1377,137 @@
             return div.innerHTML;
         }
         
+        // Project Management Functions
+        
+        // New Project button handler
+        document.getElementById('newProjectBtn').addEventListener('click', () => {
+            document.getElementById('newProjectModal').classList.add('show');
+            document.getElementById('newProjectName').value = '';
+        });
+        
+        // New Project form submission
+        document.getElementById('newProjectForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const projectName = document.getElementById('newProjectName').value.trim();
+            
+            // Validate project name (no spaces)
+            if (/\s/.test(projectName)) {
+                showStatus('projectStatus', 'Project name cannot contain spaces', 'error');
+                return;
+            }
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('projectStatus', window.i18n.t('editor.notConnected'), 'error');
+                return;
+            }
+            
+            ws.send(`newProject | ${projectName}`);
+            showStatus('projectStatus', `Creating project "${projectName}"...`, 'info');
+        });
+        
+        // Load Project button handler
+        document.getElementById('loadProjectBtn').addEventListener('click', () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('projectStatus', window.i18n.t('editor.notConnected'), 'error');
+                return;
+            }
+            
+            // Request project list from server
+            ws.send('listProjects');
+            document.getElementById('loadProjectModal').classList.add('show');
+        });
+        
+        // Load Selected Project button handler
+        document.getElementById('loadSelectedProjectBtn').addEventListener('click', () => {
+            const select = document.getElementById('projectListSelect');
+            const selectedProject = select.value;
+            
+            if (!selectedProject) {
+                showStatus('projectStatus', 'Please select a project to load', 'error');
+                return;
+            }
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('projectStatus', window.i18n.t('editor.notConnected'), 'error');
+                return;
+            }
+            
+            ws.send(`loadProject | ${selectedProject}`);
+            showStatus('projectStatus', `Loading project "${selectedProject}"...`, 'info');
+        });
+        
+        // Save As button handler
+        document.getElementById('saveAsBtn').addEventListener('click', () => {
+            document.getElementById('saveAsModal').classList.add('show');
+            document.getElementById('saveAsName').value = '';
+        });
+        
+        // Save As form submission
+        document.getElementById('saveAsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('saveAsName').value.trim();
+            
+            // Validate project name (no spaces)
+            if (/\s/.test(newName)) {
+                showStatus('projectStatus', 'Project name cannot contain spaces', 'error');
+                return;
+            }
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('projectStatus', window.i18n.t('editor.notConnected'), 'error');
+                return;
+            }
+            
+            ws.send(`saveAs | ${newName}`);
+            showStatus('projectStatus', `Saving project as "${newName}"...`, 'info');
+        });
+        
+        // Function to populate project list
+        function populateProjectList(projects) {
+            const select = document.getElementById('projectListSelect');
+            select.innerHTML = '';
+            
+            if (projects.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No projects found';
+                select.appendChild(option);
+            } else {
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project;
+                    option.textContent = project;
+                    select.appendChild(option);
+                });
+            }
+        }
+        
+        // Modal close functions
+        function closeNewProjectModal() {
+            document.getElementById('newProjectModal').classList.remove('show');
+        }
+        
+        function closeLoadProjectModal() {
+            document.getElementById('loadProjectModal').classList.remove('show');
+        }
+        
+        function closeSaveAsModal() {
+            document.getElementById('saveAsModal').classList.remove('show');
+        }
+        
+        // Make modal close functions global
+        window.closeNewProjectModal = closeNewProjectModal;
+        window.closeLoadProjectModal = closeLoadProjectModal;
+        window.closeSaveAsModal = closeSaveAsModal;
+        
         // Initialize translations and then load data
         document.addEventListener('DOMContentLoaded', async () => {
             await window.i18n.init();
+            
+            // Update display with current project from localStorage
+            const displayName = currentProject.endsWith('.json') ? currentProject : currentProject + '.json';
+            document.getElementById('currentProjectDisplay').textContent = displayName;
+            
             // Load commands and events after translations are ready
             loadCommands();
             loadEvents();

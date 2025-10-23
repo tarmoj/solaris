@@ -67,6 +67,7 @@ SolarisServer::SolarisServer(quint16 port, QObject *parent) :
         audioDirObj.cdUp();  // Go to parent directory
         eventsFile = audioDirObj.absolutePath() + "/events.txt";
         solarisJSONFile = audioDirObj.absolutePath() + "/solaris.json";
+        activeJSONFile = solarisJSONFile;  // Start with default file
 
         loadEntries();
         loadSolarisJSON();
@@ -144,6 +145,10 @@ void SolarisServer::onNewConnection()
     connect(pSocket, &QWebSocket::disconnected, this, &SolarisServer::socketDisconnected);
 
     m_clients << pSocket;
+    
+    // Send current project name to new client
+    QString projectName = getCurrentProjectName();
+    pSocket->sendTextMessage("currentProject|" + projectName);
 }
 
 void SolarisServer::processTextMessage(QString message)
@@ -290,12 +295,15 @@ void SolarisServer::processTextMessage(QString message)
                 return "'" + escaped + "'";
             };
             
-            // Use "audiofiles" as the channel/directory
+            // Get current project name and use it for the directory structure
+            QString projectName = getCurrentProjectName();
+            QString audioSubdir = QString("audiofiles/%1").arg(projectName);
+            
             QString bashCommand = QString("source %1 && python3 %2 %3 %4 %5")
                 .arg(apiKeyScript)
                 .arg(generatorScript)
                 .arg(bashEscape(text))
-                .arg(bashEscape("audiofiles"))
+                .arg(bashEscape(audioSubdir))
                 .arg(bashEscape(commandName));
             
             qDebug() << "Executing bash command:" << bashCommand;
@@ -370,6 +378,125 @@ void SolarisServer::processTextMessage(QString message)
                 qDebug() << "Updated solaris.json from client";
             } else {
                 qWarning() << "Invalid JSON data received for updateJSON";
+            }
+        }
+    } else if (command == "newProject") {
+        // Format: "newProject | projectName"
+        if (messageParts.size() >= 2) {
+            QString projectName = messageParts[1].trimmed();
+            
+            // Create new JSON file with empty commands and events
+            QDir projectDir(QFileInfo(solarisJSONFile).path());
+            QString newFileName = projectDir.absolutePath() + "/" + projectName + ".json";
+            
+            // Check if file already exists
+            if (QFile::exists(newFileName)) {
+                QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                if (pClient) {
+                    pClient->sendTextMessage("projectError|File already exists");
+                }
+                qWarning() << "Project file already exists:" << newFileName;
+            } else {
+                // Create empty project
+                QJsonObject newProject;
+                newProject["commands"] = QJsonArray();
+                newProject["events"] = QJsonArray();
+                
+                QFile file(newFileName);
+                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    QJsonDocument doc(newProject);
+                    file.write(doc.toJson(QJsonDocument::Indented));
+                    file.close();
+                    
+                    // Load the new project as active
+                    loadSolarisJSON(newFileName);
+                    
+                    QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                    if (pClient) {
+                        pClient->sendTextMessage("projectCreated|" + projectName);
+                    }
+                    qDebug() << "Created and loaded new project:" << newFileName;
+                    
+                    // Notify all clients of the current project and that data has been updated
+                    sendToAll("currentProject|" + projectName);
+                    sendToAll("dataUpdated");
+                } else {
+                    QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                    if (pClient) {
+                        pClient->sendTextMessage("projectError|Failed to create file");
+                    }
+                    qWarning() << "Failed to create project file:" << newFileName;
+                }
+            }
+        }
+    } else if (command == "listProjects") {
+        // Return list of available project files
+        QDir projectDir(QFileInfo(solarisJSONFile).path());
+        QStringList filters;
+        filters << "*.json";
+        QStringList jsonFiles = projectDir.entryList(filters, QDir::Files);
+        
+        // Build response with list of projects
+        QString response = "projectList";
+        for (const QString &fileName : jsonFiles) {
+            response += "|" + fileName;
+        }
+        
+        QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+        if (pClient) {
+            pClient->sendTextMessage(response);
+        }
+        qDebug() << "Sent project list:" << jsonFiles;
+    } else if (command == "loadProject") {
+        // Format: "loadProject | fileName"
+        if (messageParts.size() >= 2) {
+            QString fileName = messageParts[1].trimmed();
+            QDir projectDir(QFileInfo(solarisJSONFile).path());
+            QString fullPath = projectDir.absolutePath() + "/" + fileName;
+            
+            if (QFile::exists(fullPath)) {
+                loadSolarisJSON(fullPath);
+                
+                QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                if (pClient) {
+                    pClient->sendTextMessage("projectLoaded|" + fileName);
+                }
+                qDebug() << "Loaded project:" << fullPath;
+                
+                // Notify all clients of the current project and that data has been updated
+                QString projectName = getCurrentProjectName();
+                sendToAll("currentProject|" + projectName);
+                sendToAll("dataUpdated");
+            } else {
+                QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                if (pClient) {
+                    pClient->sendTextMessage("projectError|File not found");
+                }
+                qWarning() << "Project file not found:" << fullPath;
+            }
+        }
+    } else if (command == "saveAs") {
+        // Format: "saveAs | newFileName"
+        if (messageParts.size() >= 2) {
+            QString newFileName = messageParts[1].trimmed();
+            QDir projectDir(QFileInfo(solarisJSONFile).path());
+            QString fullPath = projectDir.absolutePath() + "/" + newFileName + ".json";
+            
+            // Check if file already exists
+            if (QFile::exists(fullPath)) {
+                QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                if (pClient) {
+                    pClient->sendTextMessage("projectError|File already exists");
+                }
+                qWarning() << "File already exists:" << fullPath;
+            } else {
+                saveSolarisJSON(fullPath);
+                
+                QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
+                if (pClient) {
+                    pClient->sendTextMessage("projectSaved|" + newFileName);
+                }
+                qDebug() << "Saved project as:" << fullPath;
             }
         }
     } else if (messageParts[0] == "sendCommand") { // send  command to all connected clients
@@ -474,7 +601,12 @@ void SolarisServer::sortAndSaveEntries()
 
 void SolarisServer::loadSolarisJSON()
 {
-    QFile file(solarisJSONFile);
+    loadSolarisJSON(activeJSONFile);
+}
+
+void SolarisServer::loadSolarisJSON(const QString &fileName)
+{
+    QFile file(fileName);
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QByteArray data = file.readAll();
         file.close();
@@ -482,16 +614,17 @@ void SolarisServer::loadSolarisJSON()
         QJsonDocument doc = QJsonDocument::fromJson(data);
         if (!doc.isNull() && doc.isObject()) {
             solarisData = doc.object();
-            qDebug() << "Successfully loaded solaris.json";
+            activeJSONFile = fileName;
+            qDebug() << "Successfully loaded" << fileName;
         } else {
-            qWarning() << "Failed to parse solaris.json";
+            qWarning() << "Failed to parse" << fileName;
             // Initialize with empty structure
             solarisData = QJsonObject();
             solarisData["commands"] = QJsonArray();
             solarisData["events"] = QJsonArray();
         }
     } else {
-        qDebug() << "solaris.json not found, creating new structure";
+        qDebug() << fileName << "not found, creating new structure";
         // Initialize with empty structure
         solarisData = QJsonObject();
         solarisData["commands"] = QJsonArray();
@@ -501,15 +634,31 @@ void SolarisServer::loadSolarisJSON()
 
 void SolarisServer::saveSolarisJSON()
 {
-    QFile file(solarisJSONFile);
+    saveSolarisJSON(activeJSONFile);
+}
+
+void SolarisServer::saveSolarisJSON(const QString &fileName)
+{
+    QFile file(fileName);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
         QJsonDocument doc(solarisData);
         file.write(doc.toJson(QJsonDocument::Indented));
         file.close();
-        qDebug() << "Successfully saved solaris.json";
+        qDebug() << "Successfully saved" << fileName;
+        
+        // Notify all clients that data has been updated
+        sendToAll("dataUpdated");
     } else {
-        qWarning() << "Failed to open solaris.json for writing:" << solarisJSONFile;
+        qWarning() << "Failed to open for writing:" << fileName;
     }
+}
+
+QString SolarisServer::getCurrentProjectName()
+{
+    // Extract project name from activeJSONFile path (without .json extension)
+    QFileInfo fileInfo(activeJSONFile);
+    QString baseName = fileInfo.baseName();
+    return baseName;
 }
 
 
