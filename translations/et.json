@@ -24,6 +24,12 @@
   },
   "editor": {
     "title": "Solaris - Haldamine",
+    "navigation": "Navigeerimine",
+    "goToCommands": "Käsklused",
+    "goToEvents": "Sündmused",
+    "backToTop": "↑ Tagasi üles",
+    "showTable": "▼ Näita tabelit",
+    "hideTable": "▲ Peida tabel",
     "newCommand": "Uus käsklus",
     "commandText": "Käskluse tekst:",
     "commandTextPlaceholder": "Sisestage kõneks konverteeritav tekst...",
