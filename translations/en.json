@@ -24,6 +24,12 @@
   },
   "editor": {
     "title": "Solaris - Editor",
+    "navigation": "Navigation",
+    "goToCommands": "Commands",
+    "goToEvents": "Events",
+    "backToTop": "↑ Back to top",
+    "showTable": "▼ Show table",
+    "hideTable": "▲ Hide table",
     "newCommand": "New Command",
     "commandText": "Command Text:",
     "commandTextPlaceholder": "Enter the text to convert to speech...",
