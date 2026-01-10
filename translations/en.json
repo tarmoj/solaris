@@ -3,7 +3,16 @@
     "name": "Solaris",
     "description": "Software for performance piece \"Solaris\" by Andrus Kallastu & Co.",
     "performer": "Performer",
-    "editor": "Editor"
+    "editor": "Editor",
+    "downloadProject": "Download Project",
+    "uploadProject": "Upload Project",
+    "selectProjectToDownload": "Select a project file to download:",
+    "selectFileToUpload": "Select a JSON file to upload:",
+    "chooseFile": "Choose File",
+    "fileExists": "File Already Exists",
+    "fileExistsMessage": "A file with this name already exists. Please provide a new name:",
+    "newFileName": "New file name (without .json extension):",
+    "loadingProjects": "Loading projects..."
   },
   "common": {
     "backToMenu": "← Back to Main Menu",
@@ -16,7 +25,9 @@
     "refresh": "Refresh",
     "loading": "Loading...",
     "connected": "Connected",
-    "disconnected": "Disconnected"
+    "disconnected": "Disconnected",
+    "download": "Download",
+    "upload": "Upload"
   },
   "menu": {
     "editor": "Editor",
