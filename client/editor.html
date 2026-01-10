@@ -122,6 +122,7 @@
         
         .button-group {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 20px;
         }
@@ -431,6 +432,8 @@
                 <button type="button" id="newProjectBtn" data-i18n="editor.newProject">New Project</button>
                 <button type="button" id="loadProjectBtn" class="secondary" data-i18n="editor.loadProject">Load Project</button>
                 <button type="button" id="saveAsBtn" class="secondary" data-i18n="editor.saveAs">Save As</button>
+                <button type="button" id="downloadProjectBtn" class="secondary" data-i18n="editor.downloadProject">Download Project</button>
+                <button type="button" id="uploadProjectBtn" class="secondary" data-i18n="editor.uploadProject">Upload Project</button>
             </div>
             <div id="projectStatus" class="status hidden"></div>
             <div style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 5px;">
@@ -703,6 +706,68 @@
         </div>
     </div>
     
+    <!-- Download Project Modal -->
+    <div id="downloadProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.downloadProject">Download Project</h3>
+                <button class="close-btn" onclick="closeDownloadProjectModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="downloadProjectSelect" data-i18n="editor.selectProjectToDownload">Select a project file to download:</label>
+                <select id="downloadProjectSelect">
+                    <option value="" data-i18n="editor.loadingProjects">Loading projects...</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button type="button" id="downloadProjectFileBtn" data-i18n="common.download">Download</button>
+                <button type="button" class="secondary" onclick="closeDownloadProjectModal()" data-i18n="common.cancel">Cancel</button>
+            </div>
+            <div id="downloadProjectStatus" class="status hidden"></div>
+        </div>
+    </div>
+    
+    <!-- Upload Project Modal -->
+    <div id="uploadProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.uploadProject">Upload Project</h3>
+                <button class="close-btn" onclick="closeUploadProjectModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="uploadProjectFileInput" data-i18n="editor.selectFileToUpload">Select a JSON file to upload:</label>
+                <input type="file" id="uploadProjectFileInput" accept=".json" style="display: none;">
+                <button type="button" onclick="document.getElementById('uploadProjectFileInput').click()" data-i18n="editor.chooseFile">Choose File</button>
+                <div id="uploadSelectedFileName" style="margin-top: 10px; color: #aaa; font-size: 0.9em;"></div>
+            </div>
+            <div class="button-group">
+                <button type="button" id="uploadProjectFileBtn" disabled data-i18n="common.upload">Upload</button>
+                <button type="button" class="secondary" onclick="closeUploadProjectModal()" data-i18n="common.cancel">Cancel</button>
+            </div>
+            <div id="uploadProjectStatus" class="status hidden"></div>
+        </div>
+    </div>
+    
+    <!-- Rename Project Modal (for upload conflict) -->
+    <div id="renameProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.fileExists">File Already Exists</h3>
+                <button class="close-btn" onclick="closeRenameProjectModal()">&times;</button>
+            </div>
+            <p style="margin-bottom: 15px; color: #aaa;" data-i18n="editor.fileExistsMessage">A file with this name already exists. Please provide a new name:</p>
+            <div class="form-group">
+                <label for="newProjectFileName" data-i18n="editor.newFileName">New file name (without .json extension):</label>
+                <input type="text" id="newProjectFileName" placeholder="my-project">
+            </div>
+            <div class="button-group">
+                <button type="button" id="renameProjectBtn" data-i18n="common.save">Save</button>
+                <button type="button" class="secondary" onclick="closeRenameProjectModal()" data-i18n="common.cancel">Cancel</button>
+            </div>
+            <div id="renameProjectStatus" class="status hidden"></div>
+        </div>
+    </div>
+    
     <script>
         // WebSocket connection
         let ws = null;
@@ -791,16 +856,37 @@
                         loadEvents();
                     } else if (message.startsWith('projectSaved|')) {
                         const projectName = message.split('|')[1];
-                        showStatus('projectStatus', `Project saved as "${projectName}.json" successfully!`, 'success');
+                        // Check if this is from upload or save as
+                        if (document.getElementById('uploadProjectModal').classList.contains('show') || 
+                            document.getElementById('renameProjectModal').classList.contains('show')) {
+                            showStatus('uploadProjectStatus', `Project uploaded as "${projectName}.json" successfully!`, 'success');
+                            closeUploadProjectModal();
+                            closeRenameProjectModal();
+                        } else {
+                            showStatus('projectStatus', `Project saved as "${projectName}.json" successfully!`, 'success');
+                            closeSaveAsModal();
+                        }
                         document.getElementById('currentProjectDisplay').textContent = projectName + '.json';
-                        closeSaveAsModal();
                     } else if (message.startsWith('projectError|')) {
                         const error = message.split('|')[1];
-                        showStatus('projectStatus', `Error: ${error}`, 'error');
+                        // Check which modal is open and show error there
+                        if (document.getElementById('uploadProjectModal').classList.contains('show')) {
+                            showStatus('uploadProjectStatus', `Error: ${error}`, 'error');
+                        } else if (document.getElementById('renameProjectModal').classList.contains('show')) {
+                            showStatus('renameProjectStatus', `Error: ${error}`, 'error');
+                        } else {
+                            showStatus('projectStatus', `Error: ${error}`, 'error');
+                        }
                     } else if (message.startsWith('projectList|')) {
                         const parts = message.split('|');
                         const projects = parts.slice(1);
-                        populateProjectList(projects);
+                        // Check if this is for download or load modal
+                        if (document.getElementById('downloadProjectModal').classList.contains('show')) {
+                            availableProjectFiles = projects;
+                            populateDownloadProjectList();
+                        } else {
+                            populateProjectList(projects);
+                        }
                     }
                 };
             } catch (error) {
@@ -1584,6 +1670,201 @@
             showStatus('projectStatus', `Saving project as "${newName}"...`, 'info');
         });
         
+        // Variables for upload functionality
+        let availableProjectFiles = [];
+        let uploadedFileContent = null;
+        let uploadedFileName = null;
+        
+        // Function to load available JSON files for download using WebSocket
+        async function loadAvailableProjectFiles() {
+            // Request project list from server via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('listProjects');
+            } else {
+                // Fallback to default if WebSocket not connected
+                availableProjectFiles = ['solaris.json'];
+            }
+        }
+        
+        // Download Project button handler
+        document.getElementById('downloadProjectBtn').addEventListener('click', () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('projectStatus', window.i18n.t('editor.notConnected'), 'error');
+                return;
+            }
+            
+            // Request project list from server
+            ws.send('listProjects');
+            document.getElementById('downloadProjectModal').classList.add('show');
+        });
+        
+        function populateDownloadProjectList() {
+            const select = document.getElementById('downloadProjectSelect');
+            select.innerHTML = '';
+            
+            if (availableProjectFiles.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No projects found';
+                select.appendChild(option);
+            } else {
+                availableProjectFiles.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project;
+                    option.textContent = project;
+                    select.appendChild(option);
+                });
+            }
+        }
+        
+        // Download Project File button handler
+        document.getElementById('downloadProjectFileBtn').addEventListener('click', async () => {
+            const select = document.getElementById('downloadProjectSelect');
+            const selectedFile = select.value;
+            
+            if (!selectedFile) {
+                showStatus('downloadProjectStatus', 'Please select a file to download', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('../' + selectedFile);
+                if (!response.ok) throw new Error('File not found');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = selectedFile;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showStatus('downloadProjectStatus', `Downloaded ${selectedFile} successfully!`, 'success');
+                setTimeout(closeDownloadProjectModal, 2000);
+            } catch (error) {
+                showStatus('downloadProjectStatus', `Error downloading file: ${error.message}`, 'error');
+            }
+        });
+        
+        // Upload Project button handler
+        document.getElementById('uploadProjectBtn').addEventListener('click', () => {
+            document.getElementById('uploadProjectModal').classList.add('show');
+            document.getElementById('uploadProjectFileInput').value = '';
+            document.getElementById('uploadSelectedFileName').textContent = '';
+            document.getElementById('uploadProjectFileBtn').disabled = true;
+            uploadedFileContent = null;
+            uploadedFileName = null;
+        });
+        
+        // File Input Handler for upload
+        document.getElementById('uploadProjectFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                document.getElementById('uploadSelectedFileName').textContent = '';
+                document.getElementById('uploadProjectFileBtn').disabled = true;
+                uploadedFileContent = null;
+                uploadedFileName = null;
+                return;
+            }
+            
+            if (!file.name.endsWith('.json')) {
+                showStatus('uploadProjectStatus', 'Please select a JSON file', 'error');
+                document.getElementById('uploadProjectFileBtn').disabled = true;
+                return;
+            }
+            
+            document.getElementById('uploadSelectedFileName').textContent = `Selected: ${file.name}`;
+            uploadedFileName = file.name;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    uploadedFileContent = JSON.parse(event.target.result);
+                    document.getElementById('uploadProjectFileBtn').disabled = false;
+                    showStatus('uploadProjectStatus', 'File loaded successfully', 'success');
+                } catch (error) {
+                    showStatus('uploadProjectStatus', 'Invalid JSON file', 'error');
+                    document.getElementById('uploadProjectFileBtn').disabled = true;
+                    uploadedFileContent = null;
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // Upload Project File button handler
+        document.getElementById('uploadProjectFileBtn').addEventListener('click', async () => {
+            if (!uploadedFileContent || !uploadedFileName) {
+                showStatus('uploadProjectStatus', 'Please select a file first', 'error');
+                return;
+            }
+            
+            // Check if file already exists
+            if (availableProjectFiles.includes(uploadedFileName)) {
+                // File exists, show rename modal
+                closeUploadProjectModal();
+                document.getElementById('renameProjectModal').classList.add('show');
+                const nameWithoutExt = uploadedFileName.replace('.json', '');
+                document.getElementById('newProjectFileName').value = nameWithoutExt + '-copy';
+            } else {
+                // File doesn't exist, proceed with upload
+                await performProjectUpload(uploadedFileName, uploadedFileContent);
+            }
+        });
+        
+        // Rename Project button handler
+        document.getElementById('renameProjectBtn').addEventListener('click', async () => {
+            let newName = document.getElementById('newProjectFileName').value.trim();
+            
+            if (!newName) {
+                showStatus('renameProjectStatus', 'Please enter a file name', 'error');
+                return;
+            }
+            
+            // Add .json extension if not present
+            if (!newName.endsWith('.json')) {
+                newName += '.json';
+            }
+            
+            // Check if new name also exists
+            if (availableProjectFiles.includes(newName)) {
+                showStatus('renameProjectStatus', 'A file with this name already exists. Please choose a different name.', 'error');
+                return;
+            }
+            
+            await performProjectUpload(newName, uploadedFileContent);
+            closeRenameProjectModal();
+        });
+        
+        // Perform the actual upload
+        async function performProjectUpload(fileName, content) {
+            try {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    showStatus('uploadProjectStatus', window.i18n.t('editor.notConnected'), 'error');
+                    return;
+                }
+                
+                // Remove .json extension for saveAs command
+                const nameWithoutExtension = fileName.replace('.json', '');
+                
+                // First update the JSON content on the server
+                ws.send('updateJSON | ' + JSON.stringify(content));
+                
+                // Then save as new file
+                ws.send(`saveAs | ${nameWithoutExtension}`);
+                
+                showStatus('uploadProjectStatus', `Uploading ${fileName} to server...`, 'info');
+                
+                // Close modal after a short delay
+                setTimeout(() => {
+                    closeUploadProjectModal();
+                }, 1500);
+            } catch (error) {
+                showStatus('uploadProjectStatus', `Error uploading file: ${error.message}`, 'error');
+            }
+        }
+        
         // Function to populate project list
         function populateProjectList(projects) {
             const select = document.getElementById('projectListSelect');
@@ -1617,10 +1898,28 @@
             document.getElementById('saveAsModal').classList.remove('show');
         }
         
+        function closeDownloadProjectModal() {
+            document.getElementById('downloadProjectModal').classList.remove('show');
+            document.getElementById('downloadProjectStatus').classList.add('hidden');
+        }
+        
+        function closeUploadProjectModal() {
+            document.getElementById('uploadProjectModal').classList.remove('show');
+            document.getElementById('uploadProjectStatus').classList.add('hidden');
+        }
+        
+        function closeRenameProjectModal() {
+            document.getElementById('renameProjectModal').classList.remove('show');
+            document.getElementById('renameProjectStatus').classList.add('hidden');
+        }
+        
         // Make modal close functions global
         window.closeNewProjectModal = closeNewProjectModal;
         window.closeLoadProjectModal = closeLoadProjectModal;
         window.closeSaveAsModal = closeSaveAsModal;
+        window.closeDownloadProjectModal = closeDownloadProjectModal;
+        window.closeUploadProjectModal = closeUploadProjectModal;
+        window.closeRenameProjectModal = closeRenameProjectModal;
         
         // Accordion toggle function
         function toggleAccordion(contentId, iconId) {
@@ -1643,6 +1942,9 @@
             // Update display with current project from localStorage
             const displayName = currentProject.endsWith('.json') ? currentProject : currentProject + '.json';
             document.getElementById('currentProjectDisplay').textContent = displayName;
+            
+            // Load available project files for download/upload
+            await loadAvailableProjectFiles();
             
             // Load commands and events after translations are ready
             loadCommands();
