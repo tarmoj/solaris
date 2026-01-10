@@ -111,7 +111,15 @@
     "loadingProjects": "Laadin projekte...",
     "loadSelectedProject": "Laadi valitud projekt",
     "newProjectName": "Uue projekti nimi (ilma tühikuteta, ilma .json laiendita):",
-    "saveProject": "Salvesta projekt"
+    "saveProject": "Salvesta projekt",
+    "downloadProject": "Laadi projekt alla",
+    "uploadProject": "Laadi projekt üles",
+    "selectProjectToDownload": "Vali allalaadimiseks projektifail:",
+    "selectFileToUpload": "Vali üleslaadimiseks JSON fail:",
+    "chooseFile": "Vali fail",
+    "fileExists": "Fail juba eksisteerib",
+    "fileExistsMessage": "Selle nimega fail on juba olemas. Palun sisesta uus nimi:",
+    "newFileName": "Uus failinimi (ilma .json laiendita):"
   },
   "performer": {
     "title": "Solaris - Esitaja",

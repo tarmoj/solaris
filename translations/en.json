@@ -111,7 +111,15 @@
     "loadingProjects": "Loading projects...",
     "loadSelectedProject": "Load Selected Project",
     "newProjectName": "New Project Name (no spaces, no .json extension):",
-    "saveProject": "Save Project"
+    "saveProject": "Save Project",
+    "downloadProject": "Download Project",
+    "uploadProject": "Upload Project",
+    "selectProjectToDownload": "Select a project file to download:",
+    "selectFileToUpload": "Select a JSON file to upload:",
+    "chooseFile": "Choose File",
+    "fileExists": "File Already Exists",
+    "fileExistsMessage": "A file with this name already exists. Please provide a new name:",
+    "newFileName": "New file name (without .json extension):"
   },
   "performer": {
     "title": "Solaris - Performer",
