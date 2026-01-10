@@ -122,6 +122,7 @@
         
         .button-group {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 20px;
         }
@@ -855,16 +856,37 @@
                         loadEvents();
                     } else if (message.startsWith('projectSaved|')) {
                         const projectName = message.split('|')[1];
-                        showStatus('projectStatus', `Project saved as "${projectName}.json" successfully!`, 'success');
+                        // Check if this is from upload or save as
+                        if (document.getElementById('uploadProjectModal').classList.contains('show') || 
+                            document.getElementById('renameProjectModal').classList.contains('show')) {
+                            showStatus('uploadProjectStatus', `Project uploaded as "${projectName}.json" successfully!`, 'success');
+                            closeUploadProjectModal();
+                            closeRenameProjectModal();
+                        } else {
+                            showStatus('projectStatus', `Project saved as "${projectName}.json" successfully!`, 'success');
+                            closeSaveAsModal();
+                        }
                         document.getElementById('currentProjectDisplay').textContent = projectName + '.json';
-                        closeSaveAsModal();
                     } else if (message.startsWith('projectError|')) {
                         const error = message.split('|')[1];
-                        showStatus('projectStatus', `Error: ${error}`, 'error');
+                        // Check which modal is open and show error there
+                        if (document.getElementById('uploadProjectModal').classList.contains('show')) {
+                            showStatus('uploadProjectStatus', `Error: ${error}`, 'error');
+                        } else if (document.getElementById('renameProjectModal').classList.contains('show')) {
+                            showStatus('renameProjectStatus', `Error: ${error}`, 'error');
+                        } else {
+                            showStatus('projectStatus', `Error: ${error}`, 'error');
+                        }
                     } else if (message.startsWith('projectList|')) {
                         const parts = message.split('|');
                         const projects = parts.slice(1);
-                        populateProjectList(projects);
+                        // Check if this is for download or load modal
+                        if (document.getElementById('downloadProjectModal').classList.contains('show')) {
+                            availableProjectFiles = projects;
+                            populateDownloadProjectList();
+                        } else {
+                            populateProjectList(projects);
+                        }
                     }
                 };
             } catch (error) {
@@ -1653,36 +1675,26 @@
         let uploadedFileContent = null;
         let uploadedFileName = null;
         
-        // Function to load available JSON files for download
+        // Function to load available JSON files for download using WebSocket
         async function loadAvailableProjectFiles() {
-            try {
-                const response = await fetch('..');
-                const text = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(text, 'text/html');
-                const links = doc.querySelectorAll('a');
-                
-                availableProjectFiles = [];
-                links.forEach(link => {
-                    const href = link.getAttribute('href');
-                    if (href && href.endsWith('.json')) {
-                        availableProjectFiles.push(href);
-                    }
-                });
-                
-                // If directory listing doesn't work, try a known list
-                if (availableProjectFiles.length === 0) {
-                    availableProjectFiles = ['solaris.json'];
-                }
-            } catch (error) {
-                console.log('Could not load project list from directory, using default');
+            // Request project list from server via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('listProjects');
+            } else {
+                // Fallback to default if WebSocket not connected
                 availableProjectFiles = ['solaris.json'];
             }
         }
         
         // Download Project button handler
         document.getElementById('downloadProjectBtn').addEventListener('click', () => {
-            populateDownloadProjectList();
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('projectStatus', window.i18n.t('editor.notConnected'), 'error');
+                return;
+            }
+            
+            // Request project list from server
+            ws.send('listProjects');
             document.getElementById('downloadProjectModal').classList.add('show');
         });
         
@@ -1828,34 +1840,28 @@
         // Perform the actual upload
         async function performProjectUpload(fileName, content) {
             try {
-                // Create a Blob from the JSON content
-                const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
-                
-                // Create a download link (simulating upload by saving to user's downloads)
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                // Add to available projects list
-                if (!availableProjectFiles.includes(fileName)) {
-                    availableProjectFiles.push(fileName);
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    showStatus('uploadProjectStatus', window.i18n.t('editor.notConnected'), 'error');
+                    return;
                 }
                 
-                // Note: In a real implementation with a server, you would send the file to the server here
-                // For now, we're just downloading it to the user's machine
-                showStatus('uploadProjectStatus', `File saved as ${fileName}. Note: To actually use this file with the server, you need to manually place it in the server directory.`, 'info');
+                // Remove .json extension for saveAs command
+                const nameWithoutExtension = fileName.replace('.json', '');
                 
-                // Show success and close modal after a delay
+                // First update the JSON content on the server
+                ws.send('updateJSON | ' + JSON.stringify(content));
+                
+                // Then save as new file
+                ws.send(`saveAs | ${nameWithoutExtension}`);
+                
+                showStatus('uploadProjectStatus', `Uploading ${fileName} to server...`, 'info');
+                
+                // Close modal after a short delay
                 setTimeout(() => {
                     closeUploadProjectModal();
-                }, 3000);
+                }, 1500);
             } catch (error) {
-                showStatus('uploadProjectStatus', `Error saving file: ${error.message}`, 'error');
+                showStatus('uploadProjectStatus', `Error uploading file: ${error.message}`, 'error');
             }
         }
         
