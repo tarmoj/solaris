@@ -381,7 +381,7 @@
         }
         
         .accordion-content {
-            max-height: 5000px;
+            max-height: 50000px;
             overflow: hidden;
             transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
             opacity: 1;
@@ -1267,6 +1267,7 @@
                 
                 // Display each command
                 commandsData.forEach((command, index) => {
+                    console.log(`Command index: ${index}  ${command.name}`)
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${escapeHtml(command.name)}</td>
@@ -1280,6 +1281,9 @@
                     `;
                     tbody.appendChild(row);
                 });
+                
+                // test
+                //console.log("Rendering to tbody:", tbody);
                 
                 // Populate command dropdowns
                 const eventCommandSelect = document.getElementById('eventCommand');
