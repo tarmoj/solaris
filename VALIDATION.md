@@ -136,3 +136,69 @@ if (exitCode == 0) {
 ✅ **ALL REQUIREMENTS SUCCESSFULLY IMPLEMENTED**
 
 The implementation is complete, tested, and ready for production use with a valid ElevenLabs API key.
+
+## ✅ Command Display Enhancements (2026-01-20)
+
+### Requirement: Persistent Command Display with Timestamps
+**Status:** ✅ Complete
+
+#### Changes to client/performer.html:
+
+1. **Timestamp Display** ✅
+   - Commands now display with mm:ss timestamp prefix
+   - Format: "00:20 Play quickly"
+   - Uses current time from timeDisplay element
+
+2. **Persistent Display** ✅
+   - Removed onended handlers that cleared text after audio playback
+   - Commands persist until overwritten or stopped
+   - Lines removed: 536-539 (WebAudio), 564-567 (HTMLAudio)
+
+3. **Stop Command Handling** ✅
+   - Added handler for "stop" message
+   - Clears both normal and locked screen displays
+   - Resets to "Waiting for messages..." placeholder
+
+4. **Locked Screen Display** ✅
+   - Added lockDisplayText div to show commands on locked overlay
+   - Styled with appropriate sizing (2em desktop, 1.5em mobile)
+   - Commands update simultaneously with main display
+
+#### Changes to server/solarisserver.cpp:
+
+1. **Stop Broadcast** ✅
+   - Server now sends "stop" to all clients when stop command received
+   - Line 179: `sendToAll("stop");`
+
+#### Implementation Details:
+
+**Command Display Flow:**
+```javascript
+// When play command received:
+1. Get current time: "00:20"
+2. Combine: "00:20 Play quickly"
+3. Update displayText
+4. Update lockDisplayText
+5. Play audio (no auto-clear on end)
+
+// When stop received:
+1. Clear displayText → "Waiting for messages..."
+2. Clear lockDisplayText → ""
+```
+
+**Stop Command Flow:**
+```
+Editor → "stop" → Server → Broadcasts "stop" → All Performers clear display
+```
+
+#### Test Scenarios:
+
+| Test Case | Expected Result | Status |
+|-----------|----------------|--------|
+| Play command received | Display with timestamp, persist | ✅ Ready |
+| Audio playback ends | Text remains visible | ✅ Ready |
+| New command received | Overwrites previous with new timestamp | ✅ Ready |
+| Stop command sent | Both displays clear | ✅ Ready |
+| Locked screen active | Commands display on overlay | ✅ Ready |
+| Time format | Always mm:ss (zero-padded) | ✅ Ready |
+
