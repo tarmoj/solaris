@@ -60,6 +60,7 @@ private:
     QString solarisJSONFile;
     QString activeJSONFile;
     QJsonObject solarisData;
+    bool sendToAll;
 
 };
 

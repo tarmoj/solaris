@@ -22,7 +22,8 @@ SolarisServer::SolarisServer(quint16 port, QObject *parent) :
     QObject(parent),
     m_pWebSocketServer(nullptr),
     audioDir(QString()),
-    counter(START_FROM)
+    counter(START_FROM),
+    sendToAll(false)
 {
     m_pWebSocketServer = new QWebSocketServer(QStringLiteral("SSL Echo Server"),
                                               QWebSocketServer::SecureMode,
@@ -186,6 +187,18 @@ void SolarisServer::processTextMessage(QString message)
             counter = time;
             qDebug()<< "Set time to: " << time;
         }
+    }
+    
+    if (command=="setSendToAll" && messageParts.count()>=2) {
+        QString value = messageParts[1].trimmed();
+        sendToAll = (value == "true");
+        qDebug() << "sendToAll set to:" << sendToAll;
+        
+        // Save the updated state to JSON
+        saveSolarisJSON();
+        
+        // Broadcast the new state to all clients
+        SolarisServer::sendToAll(QString("sendToAll|%1").arg(sendToAll ? "true" : "false"));
     }
 
     // Check if the message is in the format "generate | text | filename | channel | time"
@@ -615,13 +628,20 @@ void SolarisServer::loadSolarisJSON(const QString &fileName)
         if (!doc.isNull() && doc.isObject()) {
             solarisData = doc.object();
             activeJSONFile = fileName;
+            
+            // Load sendToAll flag
+            sendToAll = solarisData.value("sendToAll").toBool(false);
+            
             qDebug() << "Successfully loaded" << fileName;
+            qDebug() << "sendToAll:" << sendToAll;
         } else {
             qWarning() << "Failed to parse" << fileName;
             // Initialize with empty structure
             solarisData = QJsonObject();
             solarisData["commands"] = QJsonArray();
             solarisData["events"] = QJsonArray();
+            solarisData["sendToAll"] = false;
+            sendToAll = false;
         }
     } else {
         qDebug() << fileName << "not found, creating new structure";
@@ -629,6 +649,8 @@ void SolarisServer::loadSolarisJSON(const QString &fileName)
         solarisData = QJsonObject();
         solarisData["commands"] = QJsonArray();
         solarisData["events"] = QJsonArray();
+        solarisData["sendToAll"] = false;
+        sendToAll = false;
     }
 }
 
@@ -639,6 +661,9 @@ void SolarisServer::saveSolarisJSON()
 
 void SolarisServer::saveSolarisJSON(const QString &fileName)
 {
+    // Update sendToAll in the JSON object before saving
+    solarisData["sendToAll"] = sendToAll;
+    
     QFile file(fileName);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
         QJsonDocument doc(solarisData);
@@ -709,15 +734,22 @@ void SolarisServer::counterChanged() // timer timeOut slot
                 }
             }
             
-            // Send play command to each channel (unless channel is "0" which means send to all)
-            for (const QString &channel : channelsList) {
-                if (channel == "0") {
-                    // Send to all channels
-                    sendToAll(QString("play|0|%1|%2").arg(fileName).arg(text));
-                    break; // No need to send to other channels if we're sending to all
-                } else {
-                    // Send to specific channel
-                    sendToAll(QString("play|%1|%2|%3").arg(channel).arg(fileName).arg(text));
+            // Send play command to each channel
+            // If sendToAll is enabled, send all events to channel 0 regardless of event's channel specification
+            if (this->sendToAll) {
+                // Send to all channels (channel 0)
+                SolarisServer::sendToAll(QString("play|0|%1|%2").arg(fileName).arg(text));
+            } else {
+                // Use the channels specified in the event
+                for (const QString &channel : channelsList) {
+                    if (channel == "0") {
+                        // Send to all channels
+                        SolarisServer::sendToAll(QString("play|0|%1|%2").arg(fileName).arg(text));
+                        break; // No need to send to other channels if we're sending to all
+                    } else {
+                        // Send to specific channel
+                        SolarisServer::sendToAll(QString("play|%1|%2|%3").arg(channel).arg(fileName).arg(text));
+                    }
                 }
             }
         }

@@ -69,6 +69,7 @@
     "stop": "Stop",
     "seek": "Seek",
     "currentTime": "Current Time:",
+    "sendToAll": "Send to all",
     "editCommand": "Edit Command",
     "editEvent": "Edit Event",
     "saveChanges": "Save Changes",

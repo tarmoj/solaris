@@ -69,6 +69,7 @@
     "stop": "Peata",
     "seek": "Mine",
     "currentTime": "Praegune aeg:",
+    "sendToAll": "Saada kõikidele",
     "editCommand": "Muuda käsklust",
     "editEvent": "Muuda sündmust",
     "saveChanges": "Salvesta muudatused",
