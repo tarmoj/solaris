@@ -200,7 +200,7 @@ void SolarisServer::processTextMessage(QString message)
         saveSolarisJSON();
         
         // Broadcast the new state to all clients
-        SolarisServer::sendToAll(QString("sendToAll|%1").arg(sendToAllChannels ? "true" : "false"));
+        sendToAll(QString("sendToAll|%1").arg(sendToAllChannels ? "true" : "false"));
     }
 
     // Check if the message is in the format "generate | text | filename | channel | time"
