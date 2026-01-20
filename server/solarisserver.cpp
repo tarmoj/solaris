@@ -507,6 +507,38 @@ void SolarisServer::processTextMessage(QString message)
             } else {
                 saveSolarisJSON(fullPath);
                 
+                // Copy audio files from current project to new project
+                QString currentProjectName = getCurrentProjectName();
+                QString sourceAudioPath = audioDir + "/audiofiles/" + currentProjectName;
+                QString destAudioPath = audioDir + "/audiofiles/" + newFileName;
+                
+                // Check if source audio directory exists and has mp3 files
+                QDir sourceDir(sourceAudioPath);
+                if (sourceDir.exists()) {
+                    QStringList mp3Files = sourceDir.entryList(QStringList() << "*.mp3", QDir::Files);
+                    
+                    if (!mp3Files.isEmpty()) {
+                        // Create destination directory
+                        QDir().mkpath(destAudioPath);
+                        
+                        // Copy each mp3 file individually
+                        int copiedCount = 0;
+                        for (const QString &fileName : mp3Files) {
+                            QString sourcePath = sourceAudioPath + "/" + fileName;
+                            QString destPath = destAudioPath + "/" + fileName;
+                            if (QFile::copy(sourcePath, destPath)) {
+                                copiedCount++;
+                            } else {
+                                qWarning() << "Failed to copy" << sourcePath << "to" << destPath;
+                            }
+                        }
+                        
+                        if (copiedCount > 0) {
+                            qDebug() << "Copied" << copiedCount << "audio file(s) from" << sourceAudioPath << "to" << destAudioPath;
+                        }
+                    }
+                }
+                
                 QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
                 if (pClient) {
                     pClient->sendTextMessage("projectSaved|" + newFileName);
