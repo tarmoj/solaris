@@ -14,6 +14,7 @@
 #include <QtCore/QJsonArray>
 #include <QtNetwork/QSslCertificate>
 #include <QtNetwork/QSslKey>
+#include <QCoreApplication>
 #include <algorithm>
 
 QT_USE_NAMESPACE
@@ -52,11 +53,11 @@ SolarisServer::SolarisServer(quint16 port, QObject *parent) :
         connect(&timer, SIGNAL(timeout()), this, SLOT(counterChanged()) );
 
         // Get the audio directory path (assuming it's ../audio relative to the executable)
-        audioDir = QDir::currentPath() + "/../../../audio";
+        audioDir = QCoreApplication::applicationDirPath() + "/../../../audio";
         QDir dir(audioDir);
         if (!dir.exists()) {
             // Try alternative path
-            audioDir = QDir::currentPath() + "/../../audio";
+            audioDir = QCoreApplication::applicationDirPath() + "/../../audio";
             dir.setPath(audioDir);
             if (!dir.exists()) {
                 qWarning() << "Audio directory not found:" << audioDir;
