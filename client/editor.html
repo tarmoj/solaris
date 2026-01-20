@@ -909,10 +909,12 @@
                         const sendToAllValue = message.split('|')[1] === 'true';
                         console.log('Received sendToAll update from server:', sendToAllValue);
                         const checkbox = document.getElementById('sendToAllCheckbox');
-                        if (checkbox) {
-                            // Set attribute to prevent sending back to server
+                        if (checkbox && checkbox.checked !== sendToAllValue) {
+                            // Only update if value is different to avoid unnecessary change events
+                            // Set attribute to prevent sending back to server when change event fires
                             checkbox.setAttribute('data-ws-update', 'true');
                             checkbox.checked = sendToAllValue;
+                            // Note: The change event handler will remove the attribute
                         }
                     }
                 };
