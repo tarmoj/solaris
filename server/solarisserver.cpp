@@ -507,6 +507,35 @@ void SolarisServer::processTextMessage(QString message)
             } else {
                 saveSolarisJSON(fullPath);
                 
+                // Copy audio files from current project to new project
+                QString currentProjectName = getCurrentProjectName();
+                QString sourceAudioPath = audioDir + "/audiofiles/" + currentProjectName;
+                QString destAudioPath = audioDir + "/audiofiles/" + newFileName;
+                
+                // Check if source audio directory exists and has mp3 files
+                QDir sourceDir(sourceAudioPath);
+                if (sourceDir.exists()) {
+                    QStringList mp3Files = sourceDir.entryList(QStringList() << "*.mp3", QDir::Files);
+                    
+                    if (!mp3Files.isEmpty()) {
+                        // Create destination directory
+                        QDir().mkpath(destAudioPath);
+                        
+                        // Use system command to copy mp3 files
+                        QString copyCommand = QString("cp %1/*.mp3 %2/ 2>/dev/null")
+                            .arg(sourceAudioPath)
+                            .arg(destAudioPath);
+                        
+                        int result = system(copyCommand.toStdString().c_str());
+                        
+                        if (result == 0) {
+                            qDebug() << "Copied audio files from" << sourceAudioPath << "to" << destAudioPath;
+                        } else {
+                            qDebug() << "No audio files to copy or copy failed from" << sourceAudioPath;
+                        }
+                    }
+                }
+                
                 QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
                 if (pClient) {
                     pClient->sendTextMessage("projectSaved|" + newFileName);
