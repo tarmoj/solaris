@@ -913,6 +913,9 @@
                             // Set attribute to prevent sending back to server
                             checkbox.setAttribute('data-ws-update', 'true');
                             checkbox.checked = sendToAllValue;
+                            // Remove the attribute immediately to ensure it's cleaned up
+                            // even if no change event fires (when checkbox is already in target state)
+                            checkbox.removeAttribute('data-ws-update');
                         }
                     }
                 };
