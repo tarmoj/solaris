@@ -489,9 +489,20 @@
             // Check for time message format: 'time|seconds'
             if (message.startsWith('time|')) {
                 const timeInSeconds = parseInt(message.split('|')[1]);
-                const minutes = Math.floor(timeInSeconds / 60);
-                const seconds = timeInSeconds % 60;
-                const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                let timeStr;
+                
+                if (timeInSeconds < 0) {
+                    // Handle negative time: display as "- MM:SS"
+                    const absTime = Math.abs(timeInSeconds);
+                    const minutes = Math.floor(absTime / 60);
+                    const seconds = absTime % 60;
+                    timeStr = `- ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                } else {
+                    const minutes = Math.floor(timeInSeconds / 60);
+                    const seconds = timeInSeconds % 60;
+                    timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+                
                 document.getElementById('timeDisplay').textContent = timeStr;
                 return;
             }
