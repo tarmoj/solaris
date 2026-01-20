@@ -176,6 +176,8 @@ void SolarisServer::processTextMessage(QString message)
     if (command=="stop") {
         timer.stop();
         counter = START_FROM;
+        // Send stop command to all clients to clear their displays
+        sendToAll("stop");
     }
     if (command=="test") {
         sendTest();
@@ -692,13 +694,10 @@ void SolarisServer::counterChanged() // timer timeOut slot
 {
 
     qDebug() << "Counter: " << counter;
-    counter++;
-    if (counter>1200) {
-        timer.stop();
-        qDebug()<< "Should be finished";
-        counter = START_FROM;
-    }
-
+    
+    // Send time BEFORE incrementing to avoid off-by-one error
+    sendToAll("time|" + QString::number(counter));
+    
     // Use JSON events from solaris.json
     QJsonArray events = solarisData["events"].toArray();
     QJsonArray commands = solarisData["commands"].toArray();
@@ -755,6 +754,11 @@ void SolarisServer::counterChanged() // timer timeOut slot
         }
     }
 
-    sendToAll("time|" + QString::number(counter)); // or rather send as a string 00:00
+    counter++;
+    if (counter>1200) {
+        timer.stop();
+        qDebug()<< "Should be finished";
+        counter = START_FROM;
+    }
 
 }

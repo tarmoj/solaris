@@ -278,6 +278,14 @@
             color: #aaa;
         }
         
+        .lock-display-text {
+            margin-top: 30px;
+            font-size: 2em;
+            color: #4a9eff;
+            word-wrap: break-word;
+            max-width: 80vw;
+        }
+        
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -294,6 +302,10 @@
             .lock-message p {
                 font-size: 1.2em;
             }
+            
+            .lock-display-text {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
@@ -309,6 +321,7 @@
         <div class="lock-message">
             <h2 data-i18n="performer.locked">🔒 LOCKED</h2>
             <p data-i18n="performer.unlockHint">Triple-click/tap to unlock</p>
+            <div id="lockDisplayText" class="lock-display-text"></div>
         </div>
     </div>
     
@@ -400,6 +413,7 @@
         const statusDisplay = document.getElementById('statusDisplay');
         const displayText = document.getElementById('displayText');
         const lockOverlay = document.getElementById('lockOverlay');
+        const lockDisplayText = document.getElementById('lockDisplayText');
         
         let audioContext = null;
         let gainNode = null;
@@ -475,10 +489,31 @@
             // Check for time message format: 'time|seconds'
             if (message.startsWith('time|')) {
                 const timeInSeconds = parseInt(message.split('|')[1]);
-                const minutes = Math.floor(timeInSeconds / 60);
-                const seconds = timeInSeconds % 60;
-                const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                let timeStr;
+                
+                if (timeInSeconds < 0) {
+                    // Handle negative time: display as "- MM:SS"
+                    const absTime = Math.abs(timeInSeconds);
+                    const minutes = Math.floor(absTime / 60);
+                    const seconds = absTime % 60;
+                    timeStr = `- ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                } else {
+                    const minutes = Math.floor(timeInSeconds / 60);
+                    const seconds = timeInSeconds % 60;
+                    timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+                
                 document.getElementById('timeDisplay').textContent = timeStr;
+                return;
+            }
+            
+            // Check for stop command
+            if (message.trim().toLowerCase() === 'stop') {
+                // Clear the command display
+                displayText.textContent = window.i18n.t('performer.waitingForMessages');
+                displayText.className = 'placeholder-text';
+                lockDisplayText.textContent = '';
+                console.log('Received stop command - cleared display');
                 return;
             }
             
@@ -491,9 +526,17 @@
                 const text = parts[3].trim(); 
                 
                 if (channel===0 || channel===currentChannel) { // channel 0 means: for everyone
-                  // Display the text
-                  displayText.textContent = text;
+                  // Get current time from timeDisplay element
+                  const currentTime = document.getElementById('timeDisplay').textContent;
+                  
+                  // Display the text with timestamp
+                  const displayMessage = `${currentTime} ${text}`;
+                  displayText.textContent = displayMessage;
                   displayText.className = 'display-text';
+                  
+                  // Also display on locked screen
+                  lockDisplayText.textContent = displayMessage;
+                  
                   console.log("Play in channel: ", currentChannel, channel, fileName);
                   // Play the audio file
                   playAudio(fileName); 
@@ -533,11 +576,6 @@
                     source.buffer = buffer;
                     source.connect(gainNode || audioContext.destination);
                     
-                    source.onended = () => {
-                        displayText.textContent = window.i18n.t('performer.waitingForMessages');
-                        displayText.className = 'placeholder-text';
-                    };
-                    
                     source.start(0);
                     console.log('WebAudio playback started for', audioPath);
                     return;
@@ -559,11 +597,6 @@
                     console.error('HTMLAudio playback failed:', error);
                     // Show helpful message for mobile browsers
                     alert('Error playing audio file: ' + audioPath + '\n' + (error && error.message ? error.message : String(error)) + '\n\nTip: On iOS you must first tap "Enable Audio" (a direct user gesture) to allow playback. If you already pressed it, please ensure the page was interacted with after enabling audio.');
-                });
-                
-                audio.addEventListener('ended', () => {
-                    displayText.textContent = window.i18n.t('performer.waitingForMessages');
-                    displayText.className = 'placeholder-text';
                 });
             } catch (error) {
                 console.error('Playback failed:', error);
