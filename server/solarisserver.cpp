@@ -175,6 +175,8 @@ void SolarisServer::processTextMessage(QString message)
     if (command=="stop") {
         timer.stop();
         counter = START_FROM;
+        // Send stop command to all clients to clear their displays
+        sendToAll("stop");
     }
     if (command=="test") {
         sendTest();
