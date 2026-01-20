@@ -521,17 +521,20 @@ void SolarisServer::processTextMessage(QString message)
                         // Create destination directory
                         QDir().mkpath(destAudioPath);
                         
-                        // Use system command to copy mp3 files
-                        QString copyCommand = QString("cp %1/*.mp3 %2/ 2>/dev/null")
-                            .arg(sourceAudioPath)
-                            .arg(destAudioPath);
+                        // Copy each mp3 file individually
+                        int copiedCount = 0;
+                        for (const QString &fileName : mp3Files) {
+                            QString sourcePath = sourceAudioPath + "/" + fileName;
+                            QString destPath = destAudioPath + "/" + fileName;
+                            if (QFile::copy(sourcePath, destPath)) {
+                                copiedCount++;
+                            } else {
+                                qWarning() << "Failed to copy" << sourcePath << "to" << destPath;
+                            }
+                        }
                         
-                        int result = system(copyCommand.toStdString().c_str());
-                        
-                        if (result == 0) {
-                            qDebug() << "Copied audio files from" << sourceAudioPath << "to" << destAudioPath;
-                        } else {
-                            qDebug() << "No audio files to copy or copy failed from" << sourceAudioPath;
+                        if (copiedCount > 0) {
+                            qDebug() << "Copied" << copiedCount << "audio file(s) from" << sourceAudioPath << "to" << destAudioPath;
                         }
                     }
                 }
