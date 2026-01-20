@@ -557,6 +557,12 @@
                         <span style="color: #aaa; margin-right: 10px;" data-i18n="editor.currentTime">Current Time:</span>
                         <span id="currentTimeDisplay" style="color: #4a9eff; font-size: 1.2em; font-weight: bold;">00:00</span>
                     </div>
+                    <div style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 5px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="sendToAllCheckbox" style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
+                            <span data-i18n="editor.sendToAll">Send to all</span>
+                        </label>
+                    </div>
                     <div id="eventsStatus" class="status hidden"></div>
                     <div class="table-wrapper">
                         <table id="eventsTable">
@@ -886,6 +892,16 @@
                             populateDownloadProjectList();
                         } else {
                             populateProjectList(projects);
+                        }
+                    } else if (message.startsWith('sendToAll|')) {
+                        // Handle sendToAll state update from server
+                        const sendToAllValue = message.split('|')[1] === 'true';
+                        console.log('Received sendToAll update from server:', sendToAllValue);
+                        const checkbox = document.getElementById('sendToAllCheckbox');
+                        if (checkbox) {
+                            // Set attribute to prevent sending back to server
+                            checkbox.setAttribute('data-ws-update', 'true');
+                            checkbox.checked = sendToAllValue;
                         }
                     }
                 };
@@ -1344,6 +1360,13 @@
                 
                 const data = await response.json();
                 eventsData = data.events || [];
+                
+                // Load sendToAll state and update checkbox
+                const sendToAll = data.sendToAll || false;
+                const checkbox = document.getElementById('sendToAllCheckbox');
+                if (checkbox) {
+                    checkbox.checked = sendToAll;
+                }
                 
                 displayEvents();
                 
@@ -1953,6 +1976,24 @@
             // Load commands and events after translations are ready
             loadCommands();
             loadEvents();
+            
+            // Setup sendToAll checkbox handler
+            const sendToAllCheckbox = document.getElementById('sendToAllCheckbox');
+            if (sendToAllCheckbox) {
+                sendToAllCheckbox.addEventListener('change', function() {
+                    // Only send to server if this change came from user interaction
+                    // (not from a WebSocket message)
+                    if (!this.hasAttribute('data-ws-update')) {
+                        const sendToAll = this.checked;
+                        console.log('sendToAll checkbox changed by user:', sendToAll);
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(`setSendToAll|${sendToAll}`);
+                        }
+                    }
+                    // Remove the flag if it was set
+                    this.removeAttribute('data-ws-update');
+                });
+            }
         });
     </script>
 </body>
