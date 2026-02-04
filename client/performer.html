@@ -307,9 +307,93 @@
                 font-size: 1.5em;
             }
         }
+        
+        .language-selector {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 10000;
+        }
+        
+        .language-button {
+            width: 40px;
+            height: 40px;
+            background: rgba(42, 42, 42, 0.95);
+            border: 2px solid #4a9eff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #4a9eff;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .language-button:hover {
+            background: #3a3a3a;
+            box-shadow: 0 5px 20px rgba(74, 158, 255, 0.4);
+        }
+        
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            top: 45px;
+            left: 0;
+            background: rgba(42, 42, 42, 0.98);
+            border: 2px solid #4a9eff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            min-width: 120px;
+        }
+        
+        .language-dropdown.active {
+            display: block;
+        }
+        
+        .language-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .language-option:hover {
+            background: #3a3a3a;
+        }
+        
+        .language-option.active {
+            background: #4a9eff;
+            color: white;
+        }
+        
+        .language-option .flag {
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <button class="language-button" id="langButton" onclick="toggleLanguageMenu()" aria-label="Select language" aria-expanded="false" aria-controls="langDropdown">🌐</button>
+        <div class="language-dropdown" id="langDropdown" role="menu">
+            <div class="language-option" data-lang="et" onclick="selectLanguage('et')" role="menuitem" tabindex="0" onkeydown="handleLanguageKeydown(event, 'et')">
+                <span class="flag">🇪🇪</span>
+                <span>Eesti</span>
+            </div>
+            <div class="language-option" data-lang="en" onclick="selectLanguage('en')" role="menuitem" tabindex="0" onkeydown="handleLanguageKeydown(event, 'en')">
+                <span class="flag">🇬🇧</span>
+                <span>English</span>
+            </div>
+        </div>
+    </div>
+    
     <!-- Time Display (always visible, even on locked screen) -->
     <div class="time-display">
         <div class="time-label" data-i18n="performer.currentTime">Current Time</div>
@@ -747,9 +831,52 @@
             e.preventDefault();
         });
         
+        // Toggle language dropdown menu
+        function toggleLanguageMenu() {
+            const dropdown = document.getElementById('langDropdown');
+            const button = document.getElementById('langButton');
+            dropdown.classList.toggle('active');
+            button.setAttribute('aria-expanded', dropdown.classList.contains('active'));
+        }
+        
+        // Select language
+        async function selectLanguage(lang) {
+            await window.i18n.changeLanguage(lang);
+            updateLanguageUI();
+            const dropdown = document.getElementById('langDropdown');
+            dropdown.classList.remove('active');
+            document.getElementById('langButton').setAttribute('aria-expanded', 'false');
+        }
+        
+        // Handle keyboard navigation in dropdown
+        function handleLanguageKeydown(event, lang) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                selectLanguage(lang);
+            }
+        }
+        
+        // Update language UI
+        function updateLanguageUI() {
+            const currentLang = window.i18n.getCurrentLanguage();
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.lang === currentLang);
+            });
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const selector = document.querySelector('.language-selector');
+            const dropdown = document.getElementById('langDropdown');
+            if (selector && !selector.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+        
         // Initialize translations, then start application
         document.addEventListener('DOMContentLoaded', async () => {
             await window.i18n.init();
+            updateLanguageUI();
             // Initialize after translations are ready
             loadChannel();
             connectWebSocket();

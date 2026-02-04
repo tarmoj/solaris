@@ -5,7 +5,9 @@
 
 class I18n {
     constructor(defaultLanguage = 'et') {
-        this.currentLanguage = defaultLanguage;
+        // Try to load saved language preference from localStorage
+        const savedLanguage = localStorage.getItem('solaris_language');
+        this.currentLanguage = savedLanguage || defaultLanguage;
         this.translations = {};
         this.fallbackLanguage = 'en';
     }
@@ -45,6 +47,9 @@ class I18n {
         if (this.currentLanguage !== this.fallbackLanguage) {
             await this.loadLanguage(this.fallbackLanguage);
         }
+        
+        // Update html lang attribute after language is loaded
+        document.documentElement.lang = this.currentLanguage;
         
         // Apply translations to the page
         this.applyTranslations();
@@ -129,7 +134,18 @@ class I18n {
             await this.loadLanguage(language);
         }
         this.currentLanguage = language;
+        // Save language preference to localStorage
+        localStorage.setItem('solaris_language', language);
+        // Update html lang attribute
+        document.documentElement.lang = language;
         this.applyTranslations();
+    }
+
+    /**
+     * Get current language
+     */
+    getCurrentLanguage() {
+        return this.currentLanguage;
     }
 }
 
