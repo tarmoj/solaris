@@ -381,13 +381,13 @@
 <body>
     <!-- Language Selector -->
     <div class="language-selector">
-        <button class="language-button" id="langButton" onclick="toggleLanguageMenu()">🌐</button>
-        <div class="language-dropdown" id="langDropdown">
-            <div class="language-option" data-lang="et" onclick="selectLanguage('et')">
+        <button class="language-button" id="langButton" onclick="toggleLanguageMenu()" aria-label="Select language" aria-expanded="false" aria-controls="langDropdown">🌐</button>
+        <div class="language-dropdown" id="langDropdown" role="menu">
+            <div class="language-option" data-lang="et" onclick="selectLanguage('et')" role="menuitem" tabindex="0" onkeydown="handleLanguageKeydown(event, 'et')">
                 <span class="flag">🇪🇪</span>
                 <span>Eesti</span>
             </div>
-            <div class="language-option" data-lang="en" onclick="selectLanguage('en')">
+            <div class="language-option" data-lang="en" onclick="selectLanguage('en')" role="menuitem" tabindex="0" onkeydown="handleLanguageKeydown(event, 'en')">
                 <span class="flag">🇬🇧</span>
                 <span>English</span>
             </div>
@@ -834,14 +834,26 @@
         // Toggle language dropdown menu
         function toggleLanguageMenu() {
             const dropdown = document.getElementById('langDropdown');
+            const button = document.getElementById('langButton');
             dropdown.classList.toggle('active');
+            button.setAttribute('aria-expanded', dropdown.classList.contains('active'));
         }
         
         // Select language
         async function selectLanguage(lang) {
             await window.i18n.changeLanguage(lang);
             updateLanguageUI();
-            document.getElementById('langDropdown').classList.remove('active');
+            const dropdown = document.getElementById('langDropdown');
+            dropdown.classList.remove('active');
+            document.getElementById('langButton').setAttribute('aria-expanded', 'false');
+        }
+        
+        // Handle keyboard navigation in dropdown
+        function handleLanguageKeydown(event, lang) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                selectLanguage(lang);
+            }
         }
         
         // Update language UI
