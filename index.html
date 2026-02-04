@@ -75,9 +75,48 @@
             font-size: 0.9em;
             color: #999;
         }
+        
+        .language-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            background: #3a3a3a;
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid #4a4a4a;
+        }
+        
+        .language-switch button {
+            padding: 8px 16px;
+            background: transparent;
+            color: #aaa;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .language-switch button:hover {
+            background: #4a4a4a;
+            color: #e0e0e0;
+        }
+        
+        .language-switch button.active {
+            background: #4a9eff;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <!-- Language Switch -->
+    <div class="language-switch">
+        <button id="langEt" class="active" onclick="switchLanguage('et')">EST</button>
+        <button id="langEn" onclick="switchLanguage('en')">ENG</button>
+    </div>
+    
     <div class="container">
         <h1 >Solaris</h1>
         <nav class="menu">
@@ -90,9 +129,23 @@
     </div>
     
     <script>
+        // Switch language function
+        async function switchLanguage(lang) {
+            await window.i18n.changeLanguage(lang);
+            updateLanguageButtons();
+        }
+        
+        // Update language button states
+        function updateLanguageButtons() {
+            const currentLang = window.i18n.getCurrentLanguage();
+            document.getElementById('langEt').classList.toggle('active', currentLang === 'et');
+            document.getElementById('langEn').classList.toggle('active', currentLang === 'en');
+        }
+        
         // Initialize translations
         document.addEventListener('DOMContentLoaded', async () => {
             await window.i18n.init();
+            updateLanguageButtons();
         });
     </script>
 </body>

@@ -307,9 +307,50 @@
                 font-size: 1.5em;
             }
         }
+        
+        .language-switch {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            background: rgba(42, 42, 42, 0.95);
+            padding: 8px;
+            border-radius: 20px;
+            border: 2px solid #4a9eff;
+            z-index: 10000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .language-switch button {
+            padding: 8px 16px;
+            background: transparent;
+            color: #aaa;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .language-switch button:hover {
+            background: #4a4a4a;
+            color: #e0e0e0;
+        }
+        
+        .language-switch button.active {
+            background: #4a9eff;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <!-- Language Switch -->
+    <div class="language-switch">
+        <button id="langEt" class="active" onclick="switchLanguage('et')">EST</button>
+        <button id="langEn" onclick="switchLanguage('en')">ENG</button>
+    </div>
+    
     <!-- Time Display (always visible, even on locked screen) -->
     <div class="time-display">
         <div class="time-label" data-i18n="performer.currentTime">Current Time</div>
@@ -747,9 +788,23 @@
             e.preventDefault();
         });
         
+        // Switch language function
+        async function switchLanguage(lang) {
+            await window.i18n.changeLanguage(lang);
+            updateLanguageButtons();
+        }
+        
+        // Update language button states
+        function updateLanguageButtons() {
+            const currentLang = window.i18n.getCurrentLanguage();
+            document.getElementById('langEt').classList.toggle('active', currentLang === 'et');
+            document.getElementById('langEn').classList.toggle('active', currentLang === 'en');
+        }
+        
         // Initialize translations, then start application
         document.addEventListener('DOMContentLoaded', async () => {
             await window.i18n.init();
+            updateLanguageButtons();
             // Initialize after translations are ready
             loadChannel();
             connectWebSocket();
