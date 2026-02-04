@@ -40,9 +40,6 @@ class I18n {
             this.currentLanguage = language;
         }
         
-        // Update html lang attribute
-        document.documentElement.lang = this.currentLanguage;
-        
         // Load current language
         await this.loadLanguage(this.currentLanguage);
         
@@ -50,6 +47,9 @@ class I18n {
         if (this.currentLanguage !== this.fallbackLanguage) {
             await this.loadLanguage(this.fallbackLanguage);
         }
+        
+        // Update html lang attribute after language is loaded
+        document.documentElement.lang = this.currentLanguage;
         
         // Apply translations to the page
         this.applyTranslations();
