@@ -308,47 +308,90 @@
             }
         }
         
-        .language-switch {
+        .language-selector {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-            background: rgba(42, 42, 42, 0.95);
-            padding: 8px;
-            border-radius: 20px;
-            border: 2px solid #4a9eff;
+            top: 15px;
+            left: 15px;
             z-index: 10000;
+        }
+        
+        .language-button {
+            width: 40px;
+            height: 40px;
+            background: rgba(42, 42, 42, 0.95);
+            border: 2px solid #4a9eff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #4a9eff;
+            transition: all 0.3s ease;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
         }
         
-        .language-switch button {
-            padding: 8px 16px;
-            background: transparent;
-            color: #aaa;
-            border: none;
-            border-radius: 15px;
-            font-size: 0.9em;
+        .language-button:hover {
+            background: #3a3a3a;
+            box-shadow: 0 5px 20px rgba(74, 158, 255, 0.4);
+        }
+        
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            top: 45px;
+            left: 0;
+            background: rgba(42, 42, 42, 0.98);
+            border: 2px solid #4a9eff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            min-width: 120px;
+        }
+        
+        .language-dropdown.active {
+            display: block;
+        }
+        
+        .language-option {
+            padding: 10px 15px;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .language-switch button:hover {
-            background: #4a4a4a;
+            transition: all 0.2s ease;
             color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
         }
         
-        .language-switch button.active {
+        .language-option:hover {
+            background: #3a3a3a;
+        }
+        
+        .language-option.active {
             background: #4a9eff;
             color: white;
+        }
+        
+        .language-option .flag {
+            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
-    <!-- Language Switch -->
-    <div class="language-switch">
-        <button id="langEt" class="active" onclick="switchLanguage('et')">EST</button>
-        <button id="langEn" onclick="switchLanguage('en')">ENG</button>
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <button class="language-button" id="langButton" onclick="toggleLanguageMenu()">🌐</button>
+        <div class="language-dropdown" id="langDropdown">
+            <div class="language-option" data-lang="et" onclick="selectLanguage('et')">
+                <span class="flag">🇪🇪</span>
+                <span>Eesti</span>
+            </div>
+            <div class="language-option" data-lang="en" onclick="selectLanguage('en')">
+                <span class="flag">🇬🇧</span>
+                <span>English</span>
+            </div>
+        </div>
     </div>
     
     <!-- Time Display (always visible, even on locked screen) -->
@@ -788,23 +831,40 @@
             e.preventDefault();
         });
         
-        // Switch language function
-        async function switchLanguage(lang) {
-            await window.i18n.changeLanguage(lang);
-            updateLanguageButtons();
+        // Toggle language dropdown menu
+        function toggleLanguageMenu() {
+            const dropdown = document.getElementById('langDropdown');
+            dropdown.classList.toggle('active');
         }
         
-        // Update language button states
-        function updateLanguageButtons() {
-            const currentLang = window.i18n.getCurrentLanguage();
-            document.getElementById('langEt').classList.toggle('active', currentLang === 'et');
-            document.getElementById('langEn').classList.toggle('active', currentLang === 'en');
+        // Select language
+        async function selectLanguage(lang) {
+            await window.i18n.changeLanguage(lang);
+            updateLanguageUI();
+            document.getElementById('langDropdown').classList.remove('active');
         }
+        
+        // Update language UI
+        function updateLanguageUI() {
+            const currentLang = window.i18n.getCurrentLanguage();
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.lang === currentLang);
+            });
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const selector = document.querySelector('.language-selector');
+            const dropdown = document.getElementById('langDropdown');
+            if (selector && !selector.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
         
         // Initialize translations, then start application
         document.addEventListener('DOMContentLoaded', async () => {
             await window.i18n.init();
-            updateLanguageButtons();
+            updateLanguageUI();
             // Initialize after translations are ready
             loadChannel();
             connectWebSocket();
